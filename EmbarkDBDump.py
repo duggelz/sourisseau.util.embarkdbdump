@@ -76,10 +76,13 @@
 #   _User_Groups should have 2 records but we retrieve 0
 #
 # TODO:
-#   * Only rename fields that need to be renamed, like "Values"
-#   * Dump file rotation (delete all but X newest files)
-#   * Command line processing
-#   * Investigate os.chdir() inheritance on windows subprocesses
+#   * Dump and log file rotation (delete all but X newest files)
+#   * Retry CopyTable if child process fails for any reason
+#
+# Done:
+#   x Only rename fields that need to be renamed, like "Values"
+#   x Command line processing
+#   x Investigate os.chdir() inheritance on windows subprocesses
 
 import datetime
 import itertools
@@ -699,8 +702,6 @@ def SpawnCopyTable(table_name, sqlite3_fn):
     We don't use the process exit code because it doesn't seem to be
     set reliably on Windows.  Instead we print and look for magic
     strings to indicate success or failure.
-
-    TODO: Retry if the child fails
     """
 
     print "Spawning CopyTable(%s)" % table_name
