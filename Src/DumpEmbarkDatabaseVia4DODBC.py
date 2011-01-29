@@ -95,31 +95,6 @@ import string
 import pyodbc
 import sqlite3
 
-def DisableErrorPopup():
-    # Bleah Windows.  We spawn subprocesses but when they crash, they pop
-    # up a window to the user (who may not exist or be logged in), and
-    # halt all further processing, along with hogging file and database
-    # handles.  This disables the popup.
-    #
-    # From http://blogs.msdn.com/b/oldnewthing/archive/2004/07/27/198410.aspx
-    #
-    #DWORD dwMode = SetErrorMode(SEM_NOGPFAULTERRORBOX);
-    #SetErrorMode(dwMode | SEM_NOGPFAULTERRORBOX);
-    import ctypes
-    SEM_FAILCRITICALERRORS     = 0x0001
-    SEM_NOGPFAULTERRORBOX      = 0x0002 # From MSDN
-    SEM_NOALIGNMENTFAULTEXCEPT = 0x0004
-    SEM_NOOPENFILEERRORBOX     = 0x8000
-    dwMode = ctypes.windll.kernel32.SetErrorMode(
-        SEM_FAILCRITICALERRORS|
-        SEM_NOGPFAULTERRORBOX|
-        SEM_NOALIGNMENTFAULTEXCEPT|
-        SEM_NOOPENFILEERRORBOX
-        )
-    #print dwMode
-    #ctypes.windll.kernel32.SetErrorMode(dwMode|SEM_NOGPFAULTERRORBOX)
-#
-
 
 # 4D crashes if various tables and/or columns are accessed.  We skip
 # those and hope the data isn't too important.
@@ -159,23 +134,53 @@ _4D_MAX_SELECT_COLUMNS = 16
 _4D_ENCODING = 'cp1252'
 #_4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK	SLICK;'
 _4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK    localhost;'
-
+OUTPUT_DIR = '.'
+OUTPUT_ROOT_NAME = 'embark_dump'
 
 # Return codes aren't working.  I don't know why.  So use magic strings
 COPY_TABLE_SUCCESS_MAGIC = 'CopyTable Success QQZZ1'
-COPY_ALL_SUCCESS_MAGIC = 'CopyAll Success QQZZ2'
+## COPY_ALL_SUCCESS_MAGIC = 'CopyAll Success QQZZ2'
 
-# Embark seems to return text in the CP1252 code page
-def ConvertText(value):
-    """Convert string from cp1252 to unicode"""
-    if value is None:
-        return None
-    else:
-        return value.decode(_4D_ENCODING)
-    #
+# Class used to hold schema information
+ColumnSpec = collections.namedtuple('ColumnSpec', ('in_name', 'out_name', 'out_type', 'out_def'))
+
+
+def DisableErrorPopup():
+    """Popup blocker.
+
+    Bleah Windows.  We spawn subprocesses but when they crash, they
+    pop up a window to the user (who may not exist or be logged in),
+    and halt all further processing, along with hogging file and
+    database handles.  This disables the popup.
+    
+    From http://blogs.msdn.com/b/oldnewthing/archive/2004/07/27/198410.aspx
+    
+    DWORD dwMode = SetErrorMode(SEM_NOGPFAULTERRORBOX);
+    SetErrorMode(dwMode | SEM_NOGPFAULTERRORBOX);
+    """
+    import ctypes
+    # Enums from MSDN
+    SEM_FAILCRITICALERRORS     = 0x0001
+    SEM_NOGPFAULTERRORBOX      = 0x0002
+    SEM_NOALIGNMENTFAULTEXCEPT = 0x0004
+    SEM_NOOPENFILEERRORBOX     = 0x8000
+    dwMode = ctypes.windll.kernel32.SetErrorMode(
+        SEM_FAILCRITICALERRORS|
+        SEM_NOGPFAULTERRORBOX|
+        SEM_NOALIGNMENTFAULTEXCEPT|
+        SEM_NOOPENFILEERRORBOX
+        )
 #
+
+
 def Convert(type, value):
-    """Convert string from cp1252 to unicode"""
+    """Convert string from cp1252 to unicode
+
+    type: SQL typename
+    value: Any value
+
+    Returns new value
+    """
     if value is not None and type == 'TEXT':
         return value.decode(_4D_ENCODING)
     else:
@@ -194,13 +199,11 @@ def OpenEmbarkConn():
     embark_conn = pyodbc.connect(_4D_DSN, autocommit=False)
     print "Opened"
 
-    # This crashes the process intermittently
-    #embark_conn.add_output_converter(pyodbc.SQL_CHAR, convert_cp1252_to_unicode)
-    #print "XX"
-    #embark_conn.add_output_converter(pyodbc.SQL_LONGVARCHAR, convert_cp1252_to_unicode)
-    #print "XX"
-    #embark_conn.add_output_converter(pyodbc.SQL_VARCHAR, convert_cp1252_to_unicode)
-    #print "XX"
+    # This crashes the process intermittently so we are force to do
+    # character conversion manually
+    ## embark_conn.add_output_converter(pyodbc.SQL_CHAR, convert_cp1252_to_unicode)
+    ## embark_conn.add_output_converter(pyodbc.SQL_LONGVARCHAR, convert_cp1252_to_unicode)
+    ## embark_conn.add_output_converter(pyodbc.SQL_VARCHAR, convert_cp1252_to_unicode)
 
     embark_cursor = embark_conn.cursor()
     print "Cursor created"
@@ -209,36 +212,25 @@ def OpenEmbarkConn():
 #
 
 
-def CreateSQLiteFile():
-    """Create an SQLite database for today, deleting any existing file.
+def CreateSQLiteFile(sqlite3_db_fn):
+    """Create an SQLite database."""
 
-    Returns the filename of the database.
-    """
-
-    today = datetime.date.today()
-    
-    sqlite3_db_fn = 'embark_dump_%s.sqlite' % today.strftime('%Y-%m-%d')
-    tmp_sqlite3_db_fn = 'tmp.' + sqlite3_db_fn
-    if os.path.exists(tmp_sqlite3_db_fn):
-        os.remove(tmp_sqlite3_db_fn)
-    #
-
-    # TODO: Clean up databases from earlier days
-
-    return tmp_sqlite3_db_fn
+    # We just open and close it.  This will check that the file is
+    # writable and create an empty database.
+    assert not os.path.exists(sqlite3_db_fn)
+    conn, cursor = OpenSQLiteConn(sqlite3_db_fn)
+    cursor.close()
+    conn.commit()
+    conn.close()
 #
 
 
-def FinalizeSQLiteFile(tmp_sqlite3_db_fn):
+def FinalizeSQLiteFile(tmp_sqlite3_db_fn, final_sqlite3_db_fn):
     """Move an sqlite database to its permanent filename."""
 
-    assert tmp_sqlite3_db_fn.startswith('tmp.')
-    sqlite3_db_fn = tmp_sqlite3_db_fn[len('tmp.'):]
-    # This isn't atomic on Windows
-    if os.path.exists(sqlite3_db_fn):
-        os.remove(sqlite3_db_fn)
-    #
-    os.rename(tmp_sqlite3_db_fn, sqlite3_db_fn)
+    assert not os.path.exists(final_sqlite3_db_fn)
+    # This isn't atomic on Windows fyi
+    os.rename(tmp_sqlite3_db_fn, final_sqlite3_db_fn)
 #
 
 
@@ -246,6 +238,8 @@ def OpenSQLiteConn(sqlite3_fn):
     """Open connection to sqlite database
     
     sqlite3_fn: Filename of database
+
+    Returns (connection, cursor)
     """
 
     # pysqlite handles datetime.date and datetime.datetime but not datetime.time
@@ -263,26 +257,16 @@ def OpenSQLiteConn(sqlite3_fn):
 #
 
 
-def CopyTable(table_name, sqlite3_fn):
-    embark_conn, embark_cursor = OpenEmbarkConn()
-    try:
-        sqlite3_conn, sqlite3_cursor = OpenSQLiteConn(sqlite3_fn)
-        try:
-            DoCopyTable(embark_conn, embark_cursor, sqlite3_conn, sqlite3_cursor, table_name)
-        finally:
-            sqlite3_conn.close()
-            sqlite3_conn = None
-        #
-    finally:
-        embark_conn.close()
-        embark_conn = None
-    #
-#
-        
-
 def GetColumnSpecs(in_cursor, in_table_name):
+    """Read a table's schema from a database
+
+    in_cursor: Cursor to the database
+    in_table_name: string
+
+    returns a list of ColumnSpec(in_name, out_name, out_type, out_def)
+    """
+
     print "Getting columns"
-    ColumnSpec = collections.namedtuple('ColumnSpec', ('in_name', 'out_name', 'out_type', 'out_def'))
     column_specs = []
     in_cursor.columns(table=in_table_name)
     for idx, row in enumerate(in_cursor):
@@ -301,10 +285,10 @@ def GetColumnSpecs(in_cursor, in_table_name):
 
         # 4D allows column names starting with digits, and column
         # names that are the same as SQL keywords, embedded
-        # spaces, and who knows what else.  So mangle all column
-        # names
-        #out_name = '_' + out_name.replace(' ', '_')
-        out_name = out_name.replace(' ', '_') # XXX REMOVE
+        # spaces, and who knows what else.  So mangle column
+        # names as needed.
+        ## out_name = '_' + out_name.replace(' ', '_')
+        out_name = out_name.replace(' ', '_')
         if out_name[0] not in string.ascii_letters:
             out_name = '_' + out_name
         #
@@ -357,7 +341,16 @@ def GetColumnSpecs(in_cursor, in_table_name):
 #
 
 
-def Store(out_conn, out_cursor, out_table_name, column_specs, out_data):
+def WriteTable(out_conn, out_cursor, out_table_name, column_specs, out_data):
+    """Create a table and write a list of rows to it.
+
+    out_conn: Connection to destination database
+    out_cursor: Open cursor to destination
+    out_table_name: string
+    column_specs: As per GetColumnSpecs
+    out_data: List of rows, each row is a list of column values
+    """
+
     # ... create table
     create_table_defs = ',\n    '.join([c.out_def for c in column_specs])
     create_table_stmt = '''CREATE TABLE %s (\n    %s\n)''' % (
@@ -369,7 +362,7 @@ def Store(out_conn, out_cursor, out_table_name, column_specs, out_data):
     out_cursor.execute(create_table_stmt)
     #print out_cursor.fetchall()
 
-    # .. insert
+    # assemble insert statement
     insert_names = ', '.join([c.out_name for c in column_specs])
     insert_values = ', '.join(['?'] * len(column_specs))
     insert_stmt = '''INSERT INTO %s (%s) VALUES (%s)''' % (
@@ -387,12 +380,14 @@ def Store(out_conn, out_cursor, out_table_name, column_specs, out_data):
 #
 
 
-def FetchMethodA(in_cursor, in_table_name, column_specs):
+def ReadTableData(in_cursor, in_table_name, column_specs):
+    """Read all the data in a table and return a list of rows.
+
+    Returns a list of rows, each row is a list of column values.
+    """
+
     select_stmts = AssembleSelects(in_table_name, column_specs)
-
-    # Fetch data from source
     data_sets = RunSelects(in_cursor, select_stmts)
-
     out_data = StitchData(data_sets, column_specs)
 
     return out_data
@@ -400,10 +395,12 @@ def FetchMethodA(in_cursor, in_table_name, column_specs):
 
 
 def AssembleSelects(in_table_name, column_specs):
-    # .. select(s)
-    # The 4D ODBC driver crashes if we access too many columns.
-    # So we have to assemble multiple select statements and hope
-    # the database doesn't change underneath us.
+    """Generate a list of select statements.
+
+    The 4D ODBC driver crashes if we access too many columns.
+    So we have to assemble multiple select statements and hope
+    the database doesn't change underneath us.
+    """
     select_stmts = []
     num_selects = ((len(column_specs)-1) // _4D_MAX_SELECT_COLUMNS) + 1
     assert num_selects > 0, column_specs
@@ -424,7 +421,14 @@ def AssembleSelects(in_table_name, column_specs):
 #
 
 
-def RunSelects(in_cursor, select_stmts, quiet=False):
+def RunSelects(in_cursor, select_stmts, args=[], quiet=False):
+    """Run a series of select statements.
+
+    The statements are assumed (hoped, really) to return different
+    columns of the same rows in the same row order.
+
+    Returns a list of the result of each select statement.
+    """
     data_sets = []
     for select_stmt, select_column_specs in select_stmts:
         if not quiet:
@@ -433,8 +437,9 @@ def RunSelects(in_cursor, select_stmts, quiet=False):
         #
         time.sleep(.01) # Let Embark/4D settle a little
 
-        in_cursor.execute(select_stmt)
+        in_cursor.execute(select_stmt, *args)
         if 0:
+            # This doesn't work because the character encoding crashes
             data = in_cursor.fetchall()
         else:
             data = []
@@ -445,8 +450,6 @@ def RunSelects(in_cursor, select_stmts, quiet=False):
                         print "Row %d" % row_idx
                     #
                 #
-
-                #print row
 
                 # Character encoding conversion
                 types = [c.out_type for c in select_column_specs]
@@ -464,13 +467,15 @@ def RunSelects(in_cursor, select_stmts, quiet=False):
 #
 
 
-def FetchMethodB(in_cursor, in_table_name, column_specs):
+def ReadTableDataByKey(in_cursor, in_table_name, column_specs):
     """For whatever reason, 4D just doesn't return all the rows for
     some tables.  So we fetch a list of all the key values (hoping
     the list is complete), then fetch each row individually.
 
-    Except, the table doesn't have a unique primary key.  So we use a
-    non-unique key that may fetch more than one row.
+    Except, the table doesn't always have a unique primary key.  So we
+    use a non-unique key that may fetch more than one row.
+
+    Returns a list of rows, each row is a list of column values.
     """
     
     key_name = TABLE_FETCH_BY_KEY[in_table_name]
@@ -490,14 +495,16 @@ def FetchMethodB(in_cursor, in_table_name, column_specs):
 
     select_stmts = AssembleSelects(in_table_name, column_specs)
 
+    # Add a where clause and run each select once per unique key value
     all_rows = []
     for key_value in key_values:
-        where = ' WHERE "%s"=%s' % (key_name, key_value) # TODO escape key_value
+        where = ' WHERE "%s"=?' % key_name
         new_select_stmts = [(stmt + where, specs)
                             for stmt, specs in select_stmts]
         
         # Fetch data from source
-        data_sets = RunSelects(in_cursor, new_select_stmts, quiet=True)
+        data_sets = RunSelects(in_cursor, new_select_stmts, 
+                               args=[key_value], quiet=True)
         
         # Look for bad rows
         bad = False
@@ -522,9 +529,32 @@ def FetchMethodB(in_cursor, in_table_name, column_specs):
 
 
 def StitchData(data_sets, column_specs):
+    """Merge different columns together into a single set of rows.
+
+    We might have to fetch a table multiple times, fetching only a
+    subset of the columns each time.  This merges the data together
+    into a single set of rows with all columns.
+
+    E.g. 
+       data_sets = [
+       [
+       [ 1,  2,  3],
+       [11, 12, 13],
+       ], 
+       [
+       [ 4,  5],
+       [14, 15],
+       ]
+       ]
+       Returns [
+          [ 1,  2,  3,  4,  5],
+          [11, 12, 13, 14, 15]
+          ]
+    """
     # Each select should return the same number of rows
     for set_idx in range(len(data_sets)):
         assert len(data_sets[set_idx]) == len(data_sets[0]), (set_idx, len(data_sets[set_idx]), len(data_sets[0]))
+    #
 
     # Stitch data from different statements together.  First rotate
     # data 90 degrees so it's a list of rows, each row is a list of
@@ -533,8 +563,6 @@ def StitchData(data_sets, column_specs):
 
     # Flatten each row from list of list to just list of values
     out_data = [list(itertools.chain(*row)) for row in flipped_data]
-    #print "$$$$$$$$$"
-    #print out_data
 
     # Sanity check
     assert len(out_data) == len(data_sets[0])
@@ -545,13 +573,30 @@ def StitchData(data_sets, column_specs):
     return out_data
 #
 
+assert StitchData([
+        [
+        [ 1,  2,  3],
+        [11, 12, 13],
+        ],
+        [
+        [ 4,  5],
+        [14, 15],
+        ]
+        ], [0]*5) == [
+    [ 1,  2,  3,  4,  5],
+    [11, 12, 13, 14, 15]
+    ]
 
-def DoCopyTable(in_conn, in_cursor, out_conn, out_cursor, in_table_name):
+
+def CopyTableWithConns(in_conn, in_cursor, out_conn, out_cursor, 
+                       in_table_name):
     """Copy the schema and contents of an SQL table from one db to another
 
     in_conn: Connection to source database
+    in_cursor: Open cursor to source
     out_conn: Connection to destination database
-    table_spec: As per result of pyodbc.Cursor.tables()
+    out_cursor: Open cursor to destination
+    in_table_name: As from pyodbc.Cursor.tables()
     """
 
     # Validate table names
@@ -563,26 +608,23 @@ def DoCopyTable(in_conn, in_cursor, out_conn, out_cursor, in_table_name):
     column_specs = GetColumnSpecs(in_cursor, in_table_name)
 
     # Read data
-    if 1:
-        if in_table_name in TABLE_FETCH_BY_KEY:
-            out_data = FetchMethodB(in_cursor, in_table_name, column_specs)
-        else:
-            out_data = FetchMethodA(in_cursor, in_table_name, column_specs)
-        #
+    if in_table_name in TABLE_FETCH_BY_KEY:
+        out_data = ReadTableDataByKey(in_cursor, in_table_name, column_specs)
     else:
-        out_data = [] # XXX REMOVE
+        out_data = ReadTableData(in_cursor, in_table_name, column_specs)
+    #
 
     # Write data
-    Store(out_conn, out_cursor, out_table_name, column_specs, out_data)
+    WriteTable(out_conn, out_cursor, out_table_name, column_specs, out_data)
 
     print COPY_TABLE_SUCCESS_MAGIC
 #
 
 
-def CopyAll():
+def CopyAll(tmp_sqlite3_db_fn, final_sqlite3_db_fn):
     """Copy an entire database from one connection to another."""
 
-    print "Starting..."
+    print "Starting CopyAll at %s" % time.asctime()
 
     embark_conn, embark_cursor = OpenEmbarkConn()
 
@@ -590,8 +632,6 @@ def CopyAll():
     try:
         table_names = []
         for row in embark_cursor.tables():
-            #if row.table_name != 'OBJECT_NOTES':
-            #     continue
             table_names.append(row.table_name)
         #
     finally:
@@ -601,7 +641,7 @@ def CopyAll():
     print "Found %d tables in source" % len(table_names)
         
     # Create sqlite3 destination
-    sqlite3_fn = CreateSQLiteFile()
+    CreateSQLiteFile(tmp_sqlite3_db_fn)
 
     # Copy each table
     errors = []
@@ -611,7 +651,7 @@ def CopyAll():
             continue
         #
 
-        error = SpawnCopyTable(table_name, sqlite3_fn)
+        error = SpawnCopyTable(table_name, tmp_sqlite3_db_fn)
         if error:
             print "Doh! (%s)" % table_name
             print error
@@ -620,36 +660,69 @@ def CopyAll():
     #
 
     if errors:
-        print "Had %d errors:\n%s" % (len(errors), errors)
+        print "CopyAll had %d errors:\n%s" % (len(errors), errors)
+        # Leave the sqlite database under the temporary name to
+        # indicate errors.
     else:
-        print "No errors."
+        print "No errors in CopyAll."
+        FinalizeSQLiteFile(tmp_sqlite3_db_fn, final_sqlite3_db_fn)
     #
 
-    FinalizeSQLiteFile(sqlite3_fn)
-
-    print COPY_ALL_SUCCESS_MAGIC
+    print "Finished CopyAll at %s" % time.asctime()
 #
 
 
+def CopyTable(table_name, sqlite3_fn):
+    """Open connections and copy a single table from Embark to sqlite"""
+    print "Enter CopyTable(%s)" % table_name
+    embark_conn, embark_cursor = OpenEmbarkConn()
+    try:
+        sqlite3_conn, sqlite3_cursor = OpenSQLiteConn(sqlite3_fn)
+        try:
+            CopyTableWithConns(embark_conn, embark_cursor,
+                               sqlite3_conn, sqlite3_cursor, table_name)
+        finally:
+            sqlite3_conn.close()
+            sqlite3_conn = None
+        #
+    finally:
+        embark_conn.close()
+        embark_conn = None
+    #
+    print "Exit CopyTable(%s)" % table_name
+#
+        
+
 def SpawnCopyTable(table_name, sqlite3_fn):
+    """Spawn a child process to copy a single database table.
+
+    We don't use the process exit code because it doesn't seem to be
+    set reliably on Windows.  Instead we print and look for magic
+    strings to indicate success or failure.
+
+    TODO: Retry if the child fails
+    """
+
     print "Spawning CopyTable(%s)" % table_name
     time.sleep(.1)
-    this_file = "DumpEmbarkDatabaseVia4DODBC.py"
+    #this_file = "DumpEmbarkDatabaseVia4DODBC.py"
+    this_file = sys.argv[0]
     #args = "python.exe %s copytable %s %s" % (this_file, table_name, sqlite3_fn)
     args = ("python.exe", this_file, "copytable", table_name, sqlite3_fn)
     stdoutdata = None
     stderrdata = None
     popen = subprocess.Popen(args, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
+                             stderr=subprocess.PIPE, 
+                             universal_newlines=True)
     stdoutdata, stderrdata = popen.communicate()
     if stdoutdata:
         print "== Child stdout =="
-        print stdoutdata
+        print stdoutdata,
         print "== End Child stdout =="
     #
     if stderrdata:
         print "== Child stderr =="
-        print "stderrdata is\n%s" % stderrdata
+        print stderrdata,
         print "== End Child stderr =="
     #
     returncode = popen.returncode
@@ -668,9 +741,43 @@ def SpawnCopyTable(table_name, sqlite3_fn):
 #
 
 
+def FindUnusedFilenames(output_dir, output_root_name):
+    """Decide which filename to use for output and log files."""
+
+    # Start with date based filename
+    today = datetime.date.today()
+    base_fn = os.path.join(output_dir, output_root_name)
+    base_fn += '_' + today.strftime('%Y-%m-%d')
+
+    # Possibly append .1, .2, ... to get a unique name
+    exts = ['.sqlite.tmp', '.sqlite', '.log']
+    suffix = 0
+    while suffix < 1000:
+        suffix_str = ('.%d' % suffix) if suffix > 0 else ''
+        fn = base_fn + suffix_str
+        for ext in exts:
+            if os.path.exists(fn + ext):
+                suffix += 1
+                break # Try another higher suffix
+            #
+        else:
+            break # This suffix works
+    else:
+        raise AssertionError("Too many dump files, exiting.")
+    #
+    assert fn
+
+    final_sqlite3_db_fn = fn + '.sqlite'
+    tmp_sqlite3_db_fn = fn + '.sqlite.tmp'
+    log_fn = fn + '.log'
+
+    return (tmp_sqlite3_db_fn, final_sqlite3_db_fn, log_fn)
+#
+
+
 def usage():
     msg = """\
-Usage: %s [copyall|copytable <tablename>] <sqlite_filename>\
+Usage: %s [copytable <tablename> <sqlite_filename>]\
 """ % sys.argv[0]
     print >> sys.stderr, msg
     sys.exit(1)
@@ -678,28 +785,20 @@ Usage: %s [copyall|copytable <tablename>] <sqlite_filename>\
 
 
 def main():
-    if len(sys.argv) < 2:
-        usage()
-    #
+    if len(sys.argv) == 1: # CopyAll
+        tmp_sqlite3_db_fn, final_sqlite3_db_fn, log_fn = FindUnusedFilenames(
+            OUTPUT_DIR, OUTPUT_ROOT_NAME)
 
-    if sys.argv[1] == 'copyall':
-        CopyAll()
-#     elif sys.argv[1] == 'copyschema':
-#         if len(sys.argv) < 3:
-#             usage()
-#         #
-#         sqlite3_fn = sys.argv[2]
-#         CopySchema(sqlite3_fn)
-    elif sys.argv[1] == 'copytable':
-        #DisableErrorPopup()
-        #print "Hi"
-        #sys.exit(0)
-        if len(sys.argv) < 4:
-            usage()
-        #
+        # Redirect stdout, stderr to log file
+        log_f = open(log_fn, 'wb+')
+        sys.stdout = log_f
+        sys.stderr = log_f
+
+        CopyAll(tmp_sqlite3_db_fn, final_sqlite3_db_fn)
+    elif len(sys.argv) == 4 and sys.argv[1] == 'copytable':
         tablename = sys.argv[2]
-        sqlite3_fn = sys.argv[3]
-        CopyTable(tablename, sqlite3_fn)
+        sqlite3_db_fn = sys.argv[3]
+        CopyTable(tablename, sqlite3_db_fn)
     else:
         usage()
     #
@@ -715,11 +814,9 @@ SELECT "_Object_ID", "Field_Name", "Text", "Web_Access", "Mod_Date", "Mod_Time",
         print row_idx
     #print "Found %d rows" % (embark_cursor.rowcount)
     stopstop
+#
 
 if __name__ == '__main__':
     DisableErrorPopup()
-    if len(sys.argv) == 1:
-        sys.argv[1:2] = ['copyall']
-    #
     main()
 #
