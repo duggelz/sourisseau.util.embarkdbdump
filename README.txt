@@ -1,5 +1,10 @@
-== Sark Notes ==
-= Douglas Greiman =
+************************************************************************
+ EmbarkDBCopy.py
+ Author: Douglas Greiman
+
+ This program dumps the structure and data of an Embark database
+ into a single file in sqlite3 format.
+************************************************************************
 
 I. Installing 4D ODBC Drivers to connect to the Embark database
 
