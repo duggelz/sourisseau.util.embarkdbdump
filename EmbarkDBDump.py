@@ -76,13 +76,14 @@
 #   _User_Groups should have 2 records but we retrieve 0
 #
 # TODO:
-#   * Dump and log file rotation (delete all but X newest files)
 #   * Retry CopyTable if child process fails for any reason
 #
 # Done:
 #   x Only rename fields that need to be renamed, like "Values"
 #   x Command line processing
 #   x Investigate os.chdir() inheritance on windows subprocesses
+#   x Dump and log file rotation (delete all but X newest files)
+#   x Read from config file
 
 import datetime
 import itertools
@@ -94,6 +95,7 @@ import re
 import sys
 import subprocess
 import string
+import json
 
 import pyodbc
 import sqlite3
@@ -137,8 +139,6 @@ _4D_MAX_SELECT_COLUMNS = 16
 _4D_ENCODING = 'cp1252'
 #_4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK	SLICK;'
 _4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK    localhost;'
-OUTPUT_DIR = '.'
-OUTPUT_ROOT_NAME = 'embark_dump'
 
 # Return codes aren't working.  I don't know why.  So use magic strings
 COPY_TABLE_SUCCESS_MAGIC = 'CopyTable Success QQZZ1'
@@ -146,6 +146,9 @@ COPY_TABLE_SUCCESS_MAGIC = 'CopyTable Success QQZZ1'
 
 # Class used to hold schema information
 ColumnSpec = collections.namedtuple('ColumnSpec', ('in_name', 'out_name', 'out_type', 'out_def'))
+
+# Keep this many days of old dumps
+KEEP_DAYS = 7
 
 
 def DisableErrorPopup():
@@ -776,6 +779,83 @@ def FindUnusedFilenames(output_dir, output_root_name):
 #
 
 
+def CleanupOldDumps(output_dir, output_root_name):
+    """Delete old dump files.
+
+    Keep last N days, as well as the first dump of each month,
+    as well as the very first and last dumps.
+    """
+
+    # Get a list of all dumps
+    tmp_list = [] # List of filenames
+    dump_list = [] # List of (filename, mtime)
+    for fn in os.listdir(output_dir):
+        if fn.endswith('.sqlite.tmp'):
+            # Always delete tmp files
+            tmp_list.append(fn)
+        elif (fn.endswith('.sqlite') and
+              fn.startswith(output_root_name + '_')):
+            # Get last modified time
+            fn = os.path.join(output_dir, fn)
+            mtime = os.stat(fn).st_mtime
+            print mtime
+            dump_list.append((fn, mtime))
+        #
+    #
+
+    # If no dumps found, something is wrong.
+    print "Found %d dump files" % len(dump_list)
+    assert dump_list
+
+    # Sort from oldest to newest
+    dump_list.sort(lambda x, y: cmp(x[1],y[1]) or cmp(x[0],y[0]))
+
+    # Get age of newest (should be seconds old)
+    newest_mtime = dump_list[-1][1]
+    print "Newest dump is %s" % dump_list[-1][0]
+
+    # Keep track of which months we've seen a dump for
+    months_seen = set() # Set of (year, month)
+
+    # Decide which to delete
+    del_list = [] # List of dumps to delete
+    for fn, mtime in dump_list[1:-1]: # Ignore newest and oldest
+        #print fn
+        #print mtime
+        # Find age in days
+        age = newest_mtime - mtime
+        delta = datetime.timedelta(seconds=age)
+        assert delta.total_seconds() >= 0
+        print "Age of %s is %s" % (fn, delta)
+        #print delta.days
+        # Old?
+        if delta.days > KEEP_DAYS:
+            # Have we seen a dump for this month?
+            dt = datetime.datetime.fromtimestamp(mtime)
+            key = (dt.year, dt.month)
+            if key in months_seen:
+                del_list.append(fn)
+            else:
+                months_seen.add(key)
+            #
+        #
+    #
+
+    keep_count = len(dump_list) - len(del_list)
+    assert keep_count > 0
+    print "Cleaning up %d tmp files and %d old dumps, keeping %d" % (
+        len(tmp_list), len(del_list), keep_count)
+    #print tmp_list
+    #print del_list
+    #print dump_list
+    for fn in tmp_list + del_list:
+        print "Deleting %s" % fn
+        #os.remove(fn)
+        pass
+    #
+#           
+
+
 def usage():
     msg = """\
 Usage: %s [copytable <tablename> <sqlite_filename>]\
@@ -787,8 +867,19 @@ Usage: %s [copytable <tablename> <sqlite_filename>]\
 
 def main():
     if len(sys.argv) == 1: # CopyAll
+        # Read config file (in JSON format)
+        config_dir = os.path.dirname(__file__) or os.getcwd()
+        config_fn = os.path.join(config_dir, "EmbarkDBDump.conf")
+        with open(config_fn, 'rb') as config_f:
+            config = json.load(config_f)
+        #
+        output_dir = config.get("OUTPUT_DIR", os.getcwd())
+        assert output_dir
+        output_root_name = config.get("OUTPUT_ROOT_NAME", 'embark_dump')
+        assert output_root_name
+        
         tmp_sqlite3_db_fn, final_sqlite3_db_fn, log_fn = FindUnusedFilenames(
-            OUTPUT_DIR, OUTPUT_ROOT_NAME)
+            output_dir, output_root_name)
 
         # Redirect stdout, stderr to log file
         log_f = open(log_fn, 'wb+')
@@ -796,6 +887,8 @@ def main():
         sys.stderr = log_f
 
         CopyAll(tmp_sqlite3_db_fn, final_sqlite3_db_fn)
+
+        CleanupOldDumps(output_dir, output_root_name)
     elif len(sys.argv) == 4 and sys.argv[1] == 'copytable':
         tablename = sys.argv[2]
         sqlite3_db_fn = sys.argv[3]
