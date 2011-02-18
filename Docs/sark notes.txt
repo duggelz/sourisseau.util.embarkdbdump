@@ -54,7 +54,10 @@ I. Installing 4D ODBC Drivers to connect to the Embark database
 
 3. Run Python utility to dump Embark database
 
+   Edit EmbarkDBDump.conf to set output directory
 
+   Run
+       python EmbarkDBDump.py
    
 4. 4D ODBC Driver/PyODBC Programming Notes
    
