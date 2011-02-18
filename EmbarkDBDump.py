@@ -877,6 +877,12 @@ def main():
         assert output_dir
         output_root_name = config.get("OUTPUT_ROOT_NAME", 'embark_dump')
         assert output_root_name
+
+        # Validate config options
+        #print "Output dir is %s" % output_dir
+        if not os.path.isdir(output_dir):
+            raise AssertionError("Not a directory: %s" % output_dir)
+        #
         
         tmp_sqlite3_db_fn, final_sqlite3_db_fn, log_fn = FindUnusedFilenames(
             output_dir, output_root_name)
