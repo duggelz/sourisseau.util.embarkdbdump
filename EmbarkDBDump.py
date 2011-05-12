@@ -96,10 +96,16 @@ import sys
 import subprocess
 import string
 import json
+import traceback
 
 import pyodbc
 import sqlite3
 
+
+# Work around IDLE bug
+if "__file__" not in globals():
+    __file__ = sys.argv[0]
+#
 
 # 4D crashes if various tables and/or columns are accessed.  We skip
 # those and hope the data isn't too important.
@@ -128,8 +134,12 @@ COLUMN_BLACKLIST = (
 # can.
 TABLE_FETCH_BY_KEY = {
     'OBJECT_NOTES': '_Object_ID',
+    'OBJECTS_1': '_Objects_1_ID',
 }
 
+TABLE_SHARDING = {
+    'OBJECTS_1': 2,
+}
 
 # 4D crashes if you SELECT more than this many columns
 # The actual limit is 79ish, but we are conservative here.
@@ -347,7 +357,8 @@ def GetColumnSpecs(in_cursor, in_table_name):
 #
 
 
-def WriteTable(out_conn, out_cursor, out_table_name, column_specs, out_data):
+def WriteTable(out_conn, out_cursor, out_table_name, column_specs,
+               out_data, shard, num_shards):
     """Create a table and write a list of rows to it.
 
     out_conn: Connection to destination database
@@ -358,15 +369,17 @@ def WriteTable(out_conn, out_cursor, out_table_name, column_specs, out_data):
     """
 
     # ... create table
-    create_table_defs = ',\n    '.join([c.out_def for c in column_specs])
-    create_table_stmt = '''CREATE TABLE %s (\n    %s\n)''' % (
-        out_table_name, create_table_defs)
-    print create_table_stmt
+    if shard == 0:
+        create_table_defs = ',\n    '.join([c.out_def for c in column_specs])
+        create_table_stmt = '''CREATE TABLE %s (\n    %s\n)''' % (
+            out_table_name, create_table_defs)
+        print create_table_stmt
 
-    # Create table at destination
-    print "Creating table %s" % out_table_name
-    out_cursor.execute(create_table_stmt)
-    #print out_cursor.fetchall()
+        # Create table at destination
+        print "Creating table %s" % out_table_name
+        out_cursor.execute(create_table_stmt)
+        #print out_cursor.fetchall()
+    #
 
     # assemble insert statement
     insert_names = ', '.join([c.out_name for c in column_specs])
@@ -473,7 +486,8 @@ def RunSelects(in_cursor, select_stmts, args=[], quiet=False):
 #
 
 
-def ReadTableDataByKey(in_cursor, in_table_name, column_specs):
+def ReadTableDataByKey(in_cursor, in_table_name, column_specs,
+                       shard, num_shards):
     """For whatever reason, 4D just doesn't return all the rows for
     some tables.  So we fetch a list of all the key values (hoping
     the list is complete), then fetch each row individually.
@@ -502,32 +516,40 @@ def ReadTableDataByKey(in_cursor, in_table_name, column_specs):
     select_stmts = AssembleSelects(in_table_name, column_specs)
 
     # Add a where clause and run each select once per unique key value
+    sorted_key_values = sorted(key_values)
+    active_key_values = key_values[shard::num_shards]
     all_rows = []
-    for key_value in key_values:
+    for key_value in active_key_values:
         where = ' WHERE "%s"=?' % key_name
         new_select_stmts = [(stmt + where, specs)
                             for stmt, specs in select_stmts]
-        
-        # Fetch data from source
-        data_sets = RunSelects(in_cursor, new_select_stmts, 
-                               args=[key_value], quiet=True)
-        
-        # Look for bad rows
-        bad = False
-        for set_idx in range(len(data_sets)):
-            if len(data_sets[set_idx]) != len(data_sets[0]):
-                bad = True
-                break
-            #
-        #
-        if bad:
-            print "Skipping bad row with key %s: %s" % (key_value, data_sets)
-            continue
-        #
 
-        this_rows = StitchData(data_sets, column_specs)
-        assert len(this_rows) >= 1, (data_sets, this_rows, key_name, key_value)
-        all_rows.extend(this_rows)
+        try:
+            # Fetch data from source
+            data_sets = RunSelects(in_cursor, new_select_stmts, 
+                                   args=[key_value], quiet=True)
+
+            # Look for bad rows
+            bad = False
+            for set_idx in range(len(data_sets)):
+                if len(data_sets[set_idx]) != len(data_sets[0]):
+                    bad = True
+                    break
+                #
+            #
+            if bad:
+                print "Skipping bad row with key %s: %s" % (key_value, data_sets)
+                continue
+            #
+
+            this_rows = StitchData(data_sets, column_specs)
+            assert len(this_rows) >= 1, (data_sets, this_rows, key_name, key_value)
+            all_rows.extend(this_rows)
+        except pyodbc.Error, e:
+            print "Exception raised while running selects for key '%s'" % key_value
+            print str(e)
+            traceback.print_exc()
+        #
     #
 
     return all_rows
@@ -595,7 +617,7 @@ assert StitchData([
 
 
 def CopyTableWithConns(in_conn, in_cursor, out_conn, out_cursor, 
-                       in_table_name):
+                       in_table_name, shard, num_shards):
     """Copy the schema and contents of an SQL table from one db to another
 
     in_conn: Connection to source database
@@ -615,13 +637,16 @@ def CopyTableWithConns(in_conn, in_cursor, out_conn, out_cursor,
 
     # Read data
     if in_table_name in TABLE_FETCH_BY_KEY:
-        out_data = ReadTableDataByKey(in_cursor, in_table_name, column_specs)
+        print "Fetching table %s by key" % in_table_name
+        out_data = ReadTableDataByKey(in_cursor, in_table_name,
+                                      column_specs, shard, num_shards)
     else:
         out_data = ReadTableData(in_cursor, in_table_name, column_specs)
     #
 
     # Write data
-    WriteTable(out_conn, out_cursor, out_table_name, column_specs, out_data)
+    WriteTable(out_conn, out_cursor, out_table_name, column_specs,
+               out_data, shard, num_shards)
 
     print COPY_TABLE_SUCCESS_MAGIC
 #
@@ -657,11 +682,16 @@ def CopyAll(tmp_sqlite3_db_fn, final_sqlite3_db_fn):
             continue
         #
 
-        error = SpawnCopyTable(table_name, tmp_sqlite3_db_fn)
-        if error:
-            print "Doh! (%s)" % table_name
-            print error
-            errors.append((table_name, error))
+        num_shards = TABLE_SHARDING.get(table_name, 1)
+        for shard in range(num_shards):
+            error = SpawnCopyTable(table_name, tmp_sqlite3_db_fn,
+                                   shard, num_shards)
+            if error:
+                print "Doh! (%s)" % table_name
+                print error
+                errors.append((table_name, error))
+                break
+            #
         #
     #
 
@@ -678,7 +708,7 @@ def CopyAll(tmp_sqlite3_db_fn, final_sqlite3_db_fn):
 #
 
 
-def CopyTable(table_name, sqlite3_fn):
+def CopyTable(table_name, sqlite3_fn, shard, num_shards):
     """Open connections and copy a single table from Embark to sqlite"""
     print "Enter CopyTable(%s)" % table_name
     embark_conn, embark_cursor = OpenEmbarkConn()
@@ -686,7 +716,8 @@ def CopyTable(table_name, sqlite3_fn):
         sqlite3_conn, sqlite3_cursor = OpenSQLiteConn(sqlite3_fn)
         try:
             CopyTableWithConns(embark_conn, embark_cursor,
-                               sqlite3_conn, sqlite3_cursor, table_name)
+                               sqlite3_conn, sqlite3_cursor, table_name,
+                               shard, num_shards)
         finally:
             sqlite3_conn.close()
             sqlite3_conn = None
@@ -699,7 +730,7 @@ def CopyTable(table_name, sqlite3_fn):
 #
         
 
-def SpawnCopyTable(table_name, sqlite3_fn):
+def SpawnCopyTable(table_name, sqlite3_fn, shard, num_shards):
     """Spawn a child process to copy a single database table.
 
     We don't use the process exit code because it doesn't seem to be
@@ -712,7 +743,8 @@ def SpawnCopyTable(table_name, sqlite3_fn):
     #this_file = "DumpEmbarkDatabaseVia4DODBC.py"
     this_file = sys.argv[0]
     #args = "python.exe %s copytable %s %s" % (this_file, table_name, sqlite3_fn)
-    args = ("python.exe", this_file, "copytable", table_name, sqlite3_fn)
+    args = ("python.exe", this_file, "copytable", table_name, sqlite3_fn,
+            str(shard), str(num_shards))
     stdoutdata = None
     stderrdata = None
     popen = subprocess.Popen(args, stdout=subprocess.PIPE,
@@ -895,10 +927,12 @@ def main():
         CopyAll(tmp_sqlite3_db_fn, final_sqlite3_db_fn)
 
         CleanupOldDumps(output_dir, output_root_name)
-    elif len(sys.argv) == 4 and sys.argv[1] == 'copytable':
+    elif len(sys.argv) == 6 and sys.argv[1] == 'copytable':
         tablename = sys.argv[2]
         sqlite3_db_fn = sys.argv[3]
-        CopyTable(tablename, sqlite3_db_fn)
+        shard = int(sys.argv[4], 10)
+        num_shards = int(sys.argv[5], 10)
+        CopyTable(tablename, sqlite3_db_fn, shard, num_shards)
     else:
         usage()
     #
