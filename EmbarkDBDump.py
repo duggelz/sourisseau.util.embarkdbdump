@@ -9,6 +9,46 @@
 #
 # Empirical Stuff:
 #   Result of running embark_cursor.getTypeInfo():
+#   v11
+#     (u'BOOLEAN', -7, 5, None, None, None, 2, 0, 2, 1, 0, 0, u'BOOLEAN', 0, 0, -7, 0, 10, 10)
+#     (u'TEXT', 1, 256, u"'", u"'", None, 2, 1, 1, 0, 0, 0, u'TEXT', 0, 0, 1, 0, 10, 10)
+#     (u'TEXT', -8, 256, u"'", u"'", None, 2, 1, 1, 0, 0, 0, u'TEXT', 0, 0, -8, 0, 10, 10)
+#     (u'BYTE', -6, 4, None, None, None, 2, 0, 2, 0, 0, 1, u'BYTE', 0, 0, -6, 0, 10, 10)
+#     (u'INT16', 5, 6, None, None, None, 2, 0, 2, 0, 0, 1, u'INT16', 0, 0, 5, 0, 10, 10)
+#     (u'INT32', 4, 11, None, None, None, 2, 0, 2, 0, 0, 1, u'INT32', 0, 0, 4, 0, 10, 10)
+#     (u'UUID', -11, 32, None, None, None, 2, 0, 2, 0, 0, 1, u'UUID', 0, 0, -11, 0, 10, 10)
+#     (u'INT64', -25, 20, None, None, None, 2, 0, 2, 0, 0, 1, u'INT64', 0, 0, -25, 0, 10, 10)
+#     (u'REAL', 7, 7, None, None, None, 2, 0, 2, 0, 0, 0, u'REAL', 0, 0, 7, 0, 10, 10)
+#     (u'DOUBLE PRECISION', 8, 15, None, None, None, 2, 0, 2, 0, 0, 0, u'DOUBLE PRECISION', 0, 0, 8, 0, 10, 10)
+#     (u'DOUBLE PRECISION', 2, 10, None, None, None, 2, 0, 2, 0, 0, 0, u'DOUBLE PRECISION', 0, 0, 2, 0, 10, 10)
+#     (u'BINARY', -2, 0, None, None, None, 2, 0, 2, 1, 0, 0, u'BINARY', 0, 0, -2, 0, 10, 10)
+#     (u'TIMESTAMP', 91, 10, None, None, None, 2, 0, 2, 1, 0, 0, u'TIMESTAMP', 0, 0, 9, 1, 10, 10)
+#     (u'DURATION', 92, 8, None, None, None, 2, 0, 2, 1, 0, 0, u'DURATION', 0, 0, 92, 0, 10, 10)
+#     (u'TIMESTAMP', 93, 19, None, None, None, 2, 0, 2, 1, 0, 0, u'TIMESTAMP', 0, 0, 9, 3, 10, 10)
+#     (u'DURATION', 110, 10, None, None, None, 2, 0, 2, 1, 0, 0, u'DURATION', 0, 0, 9, 2, 10, 10)
+#
+#   .description
+#     ('type_name', <type 'unicode'>, None, 256, 256, 0, True)
+#     ('data_type', <type 'int'>, None, 2, 2, 0, True)
+#     ('column_size', <type 'int'>, None, 4, 4, 0, True)
+#     ('literal_prefix', <type 'unicode'>, None, 256, 256, 0, True)
+#     ('literal_suffix', <type 'unicode'>, None, 256, 256, 0, True)
+#     ('create_params', <type 'unicode'>, None, 256, 256, 0, True)
+#     ('nullable', <type 'int'>, None, 2, 2, 0, True)
+#     ('case_sensitive', <type 'int'>, None, 2, 2, 0, True)
+#     ('searchable', <type 'int'>, None, 2, 2, 0, True)
+#     ('unsigned_attribute', <type 'int'>, None, 2, 2, 0, True)
+#     ('fixed_prec_scale', <type 'int'>, None, 2, 2, 0, True)
+#     ('auto_unique_value', <type 'int'>, None, 2, 2, 0, True)
+#     ('local_type_name', <type 'unicode'>, None, 256, 256, 0, True)
+#     ('minimum_scale', <type 'int'>, None, 2, 2, 0, True)
+#     ('maximum_scale', <type 'int'>, None, 2, 2, 0, True)
+#     ('sql_data_type', <type 'int'>, None, 2, 2, 0, True)
+#     ('sql_datetime_sub', <type 'int'>, None, 2, 2, 0, True)
+#     ('num_prec_radix', <type 'int'>, None, 4, 4, 0, True)
+#     ('interval_precision', <type 'int'>, None, 2, 2, 0, True)
+#
+#   v2004
 #     ('BOOLEAN', -7, 1, None, None, None, 1, 0, 2, None, 0, None, 'BOOLEAN', 0, 0)
 #     ('BOOLEAN', -6, 3, None, None, None, 1, 0, 2, 0, 0, 0, 'BOOLEAN', 0, 0)
 #     ('BLOB', -4, 2147483647, "'", "'", None, 1, 0, 0, None, 0, None, 'BLOB', None, None)
@@ -22,7 +62,8 @@
 #     ('DATE', 9, 10, "'", "'", None, 1, 0, 3, None, 0, None, 'DATE', None, None)
 #     ('TIME', 10, 8, "'", "'", None, 1, 0, 3, None, 0, None, 'TIME', None, None)
 #     ('STRING', 12, 255, "'", "'", None, 1, 1, 3, None, 0, None, 'STRING', None, None)
-#     .description():
+#
+#   .description():
 #     ('type_name', <type 'str'>, None, 128, 128, 0, False),
 #     ('data_type', <type 'int'>, None, 5, 5, 0, False),
 #     ('precision', <type 'int'>, None, 10, 10, 0, True),
@@ -72,8 +113,8 @@
 #
 #
 # Various broken things:
-#   _Mod_History should have 1756 records but we retrieve 0
-#   _User_Groups should have 2 records but we retrieve 0
+#   x _Mod_History should have 1756 records but we retrieve 0
+#   x _User_Groups should have 2 records but we retrieve 0
 #
 # TODO:
 #   * Retry CopyTable if child process fails for any reason
@@ -111,44 +152,95 @@ if "__file__" not in globals():
 # those and hope the data isn't too important.
 TABLE_BLACKLIST = (
     # Error ('HY000', '[HY000] [Simba][Simba ODBC Driver]Non unique column reference: _unused. (0) (SQLExecDirectW)')
-    '_CHOICELISTDEFS',
+    #'_CHOICELISTDEFS',
+
+    # Crashes
+    '_Blobs',
+    
+    # Crashes
+    '_Previews',
+    
+    # Crashes
+    '_ThumbNails',
+
     )
+
 COLUMN_BLACKLIST = (
     # Crash
-    ('_BLOBS', 'theBlob'),
+    #('_BLOBS', 'theBlob'),
 
     # Has two columns with the same name
-    ('_CHOICELISTDEFS', '_unused'),
+    #('_CHOICELISTDEFS', '_unused'),
 
     # Error ('S1000', '[S1000] [Simba][Simba ODBC Driver][Codebase File Library] (-9703) (SQLFetch)')
-    ('_UTILITY', 'ContainsField'),
+    #('_UTILITY', 'ContainsField'),
     # Crash
-    ('_UTILITY', 'PageNames'),
+    #('_UTILITY', 'PageNames'),
 
     # Returns 0 rows
-    ('OBJECTS_1', '_Object_Keyword'),
+    #('OBJECTS_1', '_Object_Keyword'),
+
+    # Truncate
+    ('_Arrays4Files', 'Arrays_1D'),
+
+    # Illegal column name
+    ('_ChoiceListDefs', 'Values'),
+
+    # Truncate
+    ('_FM_Fields', 'Field_Help'),
+
+    # 0 results
+    ('_Mod_History', 'Modifications'),
+
+    # 0 results
+    ('_User_Groups', 'Access'),
+
+    # 0 results
+    ('_User_Groups', 'AccessFldIDs'),
+
+    # Truncate
+    ('Artist_Maker', 'Biography'),
+
+    # Truncate
+    ('Keywords', 'Notes'),
+    
+    # Truncate
+    ('Objects_1', 'Info_Page_Comm'),
+    ('Objects_1', 'User_Text_1'),
+
+    # Truncate
+    ('Object_Notes', 'Text'),
+
+    # pyodbc.Error: ('ODBC data type -25 is not supported.  Cannot read column WORDS.', 'HY000')
+    ('_Contains', 'Words'),
+    ('_Contains_Words', 'id_added_by_converter'),
+    ('Objects_1', '_Object_Keyword'),
+    ('Objects_1__Object_Keyword', 'id_added_by_converter'),
     )
 
 # This table has rows that, if fetched, cause 4D to truncate the
 # results and/or crash.  We use an alternate method to fetch what we
 # can.
 TABLE_FETCH_BY_KEY = {
-    'OBJECT_NOTES': '_Object_ID',
-    'OBJECTS_1': '_Objects_1_ID',
+    #'OBJECT_NOTES': '_Object_ID',
+    #'OBJECTS_1': '_Objects_1_ID',
 }
 
 TABLE_SHARDING = {
-    'OBJECTS_1': 2,
+    #'OBJECTS_1': 2,
 }
 
 # 4D crashes if you SELECT more than this many columns
 # The actual limit is 79ish, but we are conservative here.
 #_4D_MAX_SELECT_COLUMNS = 64
 #_4D_MAX_SELECT_COLUMNS = 32
-_4D_MAX_SELECT_COLUMNS = 16
-_4D_ENCODING = 'cp1252'
+#_4D_MAX_SELECT_COLUMNS = 16
+_4D_MAX_SELECT_COLUMNS = 4
+#_4D_ENCODING = 'cp1252'
+_4D_ENCODING = 'UTF-8'
 #_4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK	SLICK;'
-_4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK    localhost;'
+#_4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK    localhost;'
+_4D_DSN = 'DRIVER={4D v11 ODBC Driver};SERVER=localhost;PORT=19812;UID=Administrator'
 
 # Return codes aren't working.  I don't know why.  So use magic strings
 COPY_TABLE_SUCCESS_MAGIC = 'CopyTable Success QQZZ1'
@@ -197,11 +289,13 @@ def Convert(type, value):
 
     Returns new value
     """
-    if value is not None and type == 'TEXT':
-        return value.decode(_4D_ENCODING)
-    else:
-        return value
-    #
+#    if value is not None and type == 'TEXT':
+#        return value.decode(_4D_ENCODING)
+#    else:
+#        return value
+#    #
+    # Assume already utf-8
+    return value
 #
 
 
@@ -288,6 +382,7 @@ def GetColumnSpecs(in_cursor, in_table_name):
     for idx, row in enumerate(in_cursor):
         # Validate column names
         print row
+        #print row.cursor_description
         in_name = row.column_name
         out_name = in_name
         match = re.match('^[a-zA-Z_0-9 ]+$', in_name)
@@ -310,37 +405,44 @@ def GetColumnSpecs(in_cursor, in_table_name):
         #
 
         # Handle each recognized type
-        if row.type_name in ('STRING', 'TEXT'):
-            assert row.precision == row.length, row
+        if row.type_name in ('STRING', 'TEXT', 'CLOB'):
+            assert row.column_size == row.buffer_length, row
             out_type = 'TEXT'
-        elif row.type_name in ('INTEGER', 'LONGINT'):
-            assert 1 < row.length <= 8, row
-            assert row.radix == 10, row
-            assert row.scale == 0, row
+#        elif row.type_name in ('INTEGER', 'LONGINT'):
+#            assert 1 < row.length <= 8, row
+#            assert row.radix == 10, row
+#            assert row.scale == 0, row
+#            out_type = 'INTEGER'
+        elif row.type_name in ('INT16', 'INT32', 'INT64'):
+            assert 1 < row.buffer_length <= 8, row
             out_type = 'INTEGER'
         elif row.type_name in ('REAL',):
-            assert 1 < row.length <= 8, row
-            assert row.radix == 10, row
-            assert row.scale == None, row
-            out_type = 'REAL'
+#            assert 1 < row.buffer_length <= 8, row
+#            assert row.num_prec_radix == 10, row
+#            assert row.decimal_digits == None, row
+             out_type = 'REAL'
         elif row.type_name == 'BOOLEAN':
-            assert row.length == 1, row
-            assert row.radix == 2, row
-            out_type = 'INTEGER'
-        elif row.type_name in ('UNKNOWN', 'BLOB'):
-            out_type = 'BLOB'
-        elif row.type_name == 'DATE':
-            assert row.precision == 10
-            assert row.length == 6
-            assert row.scale is None
-            assert row.radix is None
-            out_type = 'DATE'
-        elif row.type_name == 'TIME':
-            assert row.precision == 8
-            assert row.length == 6
-            assert row.scale is None
-            assert row.radix is None
-            out_type = 'TIME'
+             assert row.buffer_length == 1, row
+#            assert row.radix == 2, row
+             out_type = 'INTEGER'
+        elif row.type_name in ('BLOB'):
+             out_type = 'BLOB'
+#        elif row.type_name == 'DATE':
+#            assert row.precision == 10
+#            assert row.length == 6
+#            assert row.scale is None
+#            assert row.radix is None
+#            out_type = 'DATE'
+#        elif row.type_name == 'TIME':
+#            assert row.precision == 8
+#            assert row.length == 6
+#            assert row.scale is None
+#            assert row.radix is None
+#            out_type = 'TIME'
+        elif row.type_name == 'TIMESTAMP':
+             out_type = 'TEXT'
+        elif row.type_name == 'INTERVAL':
+             out_type = 'TEXT'
         else:
             assert False, row
         #
@@ -880,9 +982,18 @@ def CleanupOldDumps(output_dir, output_root_name):
     #print tmp_list
     #print del_list
     #print dump_list
-    for fn in tmp_list + del_list:
+    for fn in tmp_list: # fn is relative
         print "Deleting %s" % fn
         #os.remove(fn)
+        os.rename(os.path.join(output_dir, fn),
+                  os.path.join(output_dir, 'old', fn))
+        pass
+    #
+    for fn in del_list: # fn is absolute
+        print "Deleting %s" % fn
+        #os.remove(fn)
+        old_fn = os.path.join(output_dir, 'old', os.path.basename(fn))
+        os.rename(fn, old_fn)
         pass
     #
 #           
@@ -943,9 +1054,26 @@ if 0:
     s = '''
 SELECT "_Object_ID", "Field_Name", "Text", "Web_Access", "Mod_Date", "Mod_Time", "Mod_User", "Record_Date", "Record_Time", "Record_User", "_Not_Used7", "_Not_Used8", "_Not_Used9", "_Not_Used10", "_Not_Used11" FROM "OBJECT_NOTES" WHERE "_Object_ID"<>5222 AND "_Object_ID"<>509 AND "_Object_ID"<>510 AND "_Object_ID"<>511
 '''
+
+    s = '''SELECT * FROM "_User_Groups"'''
+    s = '''SELECT "_unused5", "_unused6" FROM "_User_Groups"'''
+    s = '''SELECT "_Group_ID", "Name", "Menus_Pg4" FROM "_User_Groups"'''
+    s = '''SELECT "AccessFldIDs" FROM "_User_Groups"'''
+    s = '''SELECT "_Object_Keyword" FROM "Objects_1"'''    
+    #s = '''SELECT "_Width", "_Depth", "Duration", "Info_Page_Comm" FROM "Objects_1"'''
+    #s = '''SELECT "_Width", "_Depth", "Duration" FROM "Objects_1"'''
+    s = '''SELECT "User_Num_2", "User_Num_3", "InActive", "User_Text_1" FROM "Objects_1"'''
+    embark_cursor.execute(s)
+    print len(embark_cursor.fetchall())
+    stopstop
+    #for row_idx, row in enumerate(embark_cursor.getTypeInfo()):
+    #embark_cursor.getTypeInfo()
+    #for row_idx, row in enumerate(embark_cursor.description):
+    #for row_idx, row in enumerate(embark_cursor.tables()):
+    #for row_idx, row in enumerate(embark_cursor.columns()):
     for row_idx, row in enumerate(embark_cursor.execute(s)):
-        print row
-        print row_idx
+        print "%03d %s" % (row_idx, row)
+        #print row_idx
     #print "Found %d rows" % (embark_cursor.rowcount)
     stopstop
 #
