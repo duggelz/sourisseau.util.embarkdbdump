@@ -9,7 +9,7 @@
 #
 # Empirical Stuff:
 #   Result of running embark_cursor.getTypeInfo():
-#   v11
+#   v8
 #     (u'BOOLEAN', -7, 5, None, None, None, 2, 0, 2, 1, 0, 0, u'BOOLEAN', 0, 0, -7, 0, 10, 10)
 #     (u'TEXT', 1, 256, u"'", u"'", None, 2, 1, 1, 0, 0, 0, u'TEXT', 0, 0, 1, 0, 10, 10)
 #     (u'TEXT', -8, 256, u"'", u"'", None, 2, 1, 1, 0, 0, 0, u'TEXT', 0, 0, -8, 0, 10, 10)
@@ -48,7 +48,7 @@
 #     ('num_prec_radix', <type 'int'>, None, 4, 4, 0, True)
 #     ('interval_precision', <type 'int'>, None, 2, 2, 0, True)
 #
-#   v2004
+#   v7
 #     ('BOOLEAN', -7, 1, None, None, None, 1, 0, 2, None, 0, None, 'BOOLEAN', 0, 0)
 #     ('BOOLEAN', -6, 3, None, None, None, 1, 0, 2, 0, 0, 0, 'BOOLEAN', 0, 0)
 #     ('BLOB', -4, 2147483647, "'", "'", None, 1, 0, 0, None, 0, None, 'BLOB', None, None)
@@ -62,7 +62,6 @@
 #     ('DATE', 9, 10, "'", "'", None, 1, 0, 3, None, 0, None, 'DATE', None, None)
 #     ('TIME', 10, 8, "'", "'", None, 1, 0, 3, None, 0, None, 'TIME', None, None)
 #     ('STRING', 12, 255, "'", "'", None, 1, 1, 3, None, 0, None, 'STRING', None, None)
-#
 #   .description():
 #     ('type_name', <type 'str'>, None, 128, 128, 0, False),
 #     ('data_type', <type 'int'>, None, 5, 5, 0, False),
@@ -81,6 +80,15 @@
 #     ('maximum_scale', <type 'int'>, None, 10, 10, 0, True))
 #
 #   Result of running embark_cursor.tables():
+#   v8
+#     ('table_cat', <type 'unicode'>, None, 256, 256, 0, True), 
+#     ('table_schem', <type 'unicode'>, None, 256, 256, 0, True),
+#     ('table_name', <type 'unicode'>, None, 256, 256, 0, True),
+#     ('table_type', <type 'unicode'>, None, 256, 256, 0, True), 
+#     ('remarks', <type 'unicode'>, None, 256, 256, 0, True)]
+#
+#     E.g. (None, None, u'_Debug', u'TABLE', None)
+#   v7
 #     ('table_qualifier', <type 'str'>, None, 128, 128, 0, True),
 #     ('table_owner', <type 'str'>, None, 128, 128, 0, True),
 #     ('table_name', <type 'str'>, None, 128, 128, 0, True),
@@ -110,7 +118,6 @@
 #     ('remarks', <type 'str'>, None, 254, 254, 0, True))
 #
 #     E.g. ('C:\\USERS\\DUGGELZ\\DESKTOP\\4D ODBC DRIVER FOR WINDOWS 7 64BIT', None, '_AAT_OTHERTERMS', '_New_DK_ID', 12, 'STRING', 4, 4, None, None, 1, None)
-#
 #
 # Various broken things:
 #   x _Mod_History should have 1756 records but we retrieve 0
@@ -155,10 +162,10 @@ TABLE_BLACKLIST = (
     #'_CHOICELISTDEFS',
 
     # Crashes
-    '_Blobs',
+    #'_Blobs',
     
     # Crashes
-    '_Previews',
+    #'_Previews',
     
     # Crashes
     '_ThumbNails',
@@ -166,31 +173,26 @@ TABLE_BLACKLIST = (
     )
 
 COLUMN_BLACKLIST = (
-    # Crash
-    #('_BLOBS', 'theBlob'),
+    # Truncate
+    ('_Arrays4Files', 'Arrays_1D'),
+
+    # Crash in both v7 and v8
+    ('_Blobs', 'theBlob'),
 
     # Has two columns with the same name
     #('_CHOICELISTDEFS', '_unused'),
 
-    # Error ('S1000', '[S1000] [Simba][Simba ODBC Driver][Codebase File Library] (-9703) (SQLFetch)')
-    #('_UTILITY', 'ContainsField'),
-    # Crash
-    #('_UTILITY', 'PageNames'),
-
-    # Returns 0 rows
-    #('OBJECTS_1', '_Object_Keyword'),
-
-    # Truncate
-    ('_Arrays4Files', 'Arrays_1D'),
-
     # Illegal column name
     ('_ChoiceListDefs', 'Values'),
 
-    # Truncate
+    # Truncates results
     ('_FM_Fields', 'Field_Help'),
 
-    # 0 results
+    # Truncates results
     ('_Mod_History', 'Modifications'),
+
+    # Crash in both v7 and v8
+    ('_Previews', 'Picture'),
 
     # 0 results
     ('_User_Groups', 'Access'),
@@ -198,17 +200,22 @@ COLUMN_BLACKLIST = (
     # 0 results
     ('_User_Groups', 'AccessFldIDs'),
 
-    # Truncate
+    # Error ('S1000', '[S1000] [Simba][Simba ODBC Driver][Codebase File Library] (-9703) (SQLFetch)')
+    #('_UTILITY', 'ContainsField'),
+    # Crash
+    #('_UTILITY', 'PageNames'),
+
+    # Truncates results
     ('Artist_Maker', 'Biography'),
 
-    # Truncate
+    # Truncates results
     ('Keywords', 'Notes'),
     
-    # Truncate
+    # Truncates results
     ('Objects_1', 'Info_Page_Comm'),
     ('Objects_1', 'User_Text_1'),
 
-    # Truncate
+    # Truncates results
     ('Object_Notes', 'Text'),
 
     # pyodbc.Error: ('ODBC data type -25 is not supported.  Cannot read column WORDS.', 'HY000')
@@ -237,7 +244,7 @@ TABLE_SHARDING = {
 #_4D_MAX_SELECT_COLUMNS = 16
 _4D_MAX_SELECT_COLUMNS = 4
 #_4D_ENCODING = 'cp1252'
-_4D_ENCODING = 'UTF-8'
+_4D_ENCODING = 'utf-8'
 #_4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK	SLICK;'
 #_4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK    localhost;'
 _4D_DSN = 'DRIVER={4D v11 ODBC Driver};SERVER=localhost;PORT=19812;UID=Administrator'
@@ -247,11 +254,10 @@ COPY_TABLE_SUCCESS_MAGIC = 'CopyTable Success QQZZ1'
 ## COPY_ALL_SUCCESS_MAGIC = 'CopyAll Success QQZZ2'
 
 # Class used to hold schema information
-ColumnSpec = collections.namedtuple('ColumnSpec', ('in_name', 'out_name', 'out_type', 'out_def'))
+ColumnSpec = collections.namedtuple('ColumnSpec', ('in_name', 'out_name', 'out_type', 'out_def', 'select_name'))
 
 # Keep this many days of old dumps
-KEEP_DAYS = 7
-
+KEEP_DAYS = 28
 
 def DisableErrorPopup():
     """Popup blocker.
@@ -382,14 +388,17 @@ def GetColumnSpecs(in_cursor, in_table_name):
     for idx, row in enumerate(in_cursor):
         # Validate column names
         print row
-        #print row.cursor_description
+        for idx, (desc, val) in enumerate(zip(row.cursor_description, row)):
+            print "[%d] %s='%s'" % (idx, desc[0], val)
+        #
         in_name = row.column_name
         out_name = in_name
         match = re.match('^[a-zA-Z_0-9 ]+$', in_name)
         assert match, row
 
         # Some columns cause a crash when they are SELECTed.  Skip them
-        if (in_table_name, in_name) in COLUMN_BLACKLIST:
+        blacklisted_lowered = [(t.lower(), c.lower()) for t,c in COLUMN_BLACKLIST]
+        if (in_table_name.lower(), in_name.lower()) in blacklisted_lowered:
             print "Skipping blacklisted column %s%s" % (in_table_name, in_name)
             continue
         #
@@ -405,44 +414,51 @@ def GetColumnSpecs(in_cursor, in_table_name):
         #
 
         # Handle each recognized type
+        select_name = '"%s"' % in_name
         if row.type_name in ('STRING', 'TEXT', 'CLOB'):
             assert row.column_size == row.buffer_length, row
             out_type = 'TEXT'
-#        elif row.type_name in ('INTEGER', 'LONGINT'):
-#            assert 1 < row.length <= 8, row
-#            assert row.radix == 10, row
-#            assert row.scale == 0, row
-#            out_type = 'INTEGER'
-        elif row.type_name in ('INT16', 'INT32', 'INT64'):
-            assert 1 < row.buffer_length <= 8, row
+        elif row.type_name in ('INT16', 'INT32'):
+            # Avoid "ODBC data type -25 is not supported.  Cannot read column"
+            # TODO Cast to some other type
+            assert row.data_type != -25, row
+            out_type = 'INTEGER'
+        elif row.type_name in ('INT64'):
+            # Apparently the driver can't handle 64 bit ints, so we truncate
+            # them all to 32 bits.  The error is
+            # Avoid "ODBC data type -25 is not supported.  Cannot read column"
+            assert row.data_type == -25, row
+            select_name = 'CAST("%s" AS INT) AS "%s"' % (in_name, in_name)
             out_type = 'INTEGER'
         elif row.type_name in ('REAL',):
-#            assert 1 < row.buffer_length <= 8, row
-#            assert row.num_prec_radix == 10, row
-#            assert row.decimal_digits == None, row
-             out_type = 'REAL'
+            assert 1 < row.buffer_length <= 8, row
+            assert row.num_prec_radix == 10, row
+            assert row.decimal_digits in (0, None), row
+            out_type = 'REAL'
         elif row.type_name == 'BOOLEAN':
-             assert row.buffer_length == 1, row
-#            assert row.radix == 2, row
-             out_type = 'INTEGER'
-        elif row.type_name in ('BLOB'):
-             out_type = 'BLOB'
+            assert row.buffer_length == 1, row
+            assert row.num_prec_radix == 2, row
+            out_type = 'INTEGER'
+        elif row.type_name in ('UNKNOWN', 'BLOB'):
+            out_type = 'BLOB'
 #        elif row.type_name == 'DATE':
-#            assert row.precision == 10
-#            assert row.length == 6
-#            assert row.scale is None
-#            assert row.radix is None
+#            assert row.column_size == 10
+#            assert row.buffer_length == 6
+#            assert row.decimal_digits is None
+#            assert row.num_prec_radix is None
 #            out_type = 'DATE'
 #        elif row.type_name == 'TIME':
-#            assert row.precision == 8
-#            assert row.length == 6
-#            assert row.scale is None
-#            assert row.radix is None
+#            assert row.column_size == 8
+#            assert row.buffer_length == 6
+#            assert row.decimal_digits is None
+#            assert row.num_prec_radix is None
 #            out_type = 'TIME'
         elif row.type_name == 'TIMESTAMP':
-             out_type = 'TEXT'
+            out_type = 'TIMESTAMP'
+            # TODO: Check this
         elif row.type_name == 'INTERVAL':
-             out_type = 'TEXT'
+            out_type = 'INTERVAL'
+            # TODO: Check this
         else:
             assert False, row
         #
@@ -453,11 +469,40 @@ def GetColumnSpecs(in_cursor, in_table_name):
             ' NOT NULL' if not row.nullable else ''
             )
 
-        column_specs.append(ColumnSpec(in_name, out_name, out_type, out_def))
+        column_specs.append(ColumnSpec(in_name, out_name, out_type, out_def, select_name))
     #
     return column_specs
 #
 
+
+def GetTableRowCount(cursor, table_name):
+    """Read the number of data rows in a table
+
+    in_cursor: Cursor to the database
+    in_table_name: string
+
+    returns integer number of columns
+    """
+
+    print "Getting row count for %s" % table_name
+    # SELECT COUNT(*) doesn't work, gives ODBC error, don't know why
+    select_stmt = '''SELECT CAST(COUNT(*) AS int) FROM %s''' % table_name
+    print select_stmt
+    time.sleep(.01) # Let Embark/4D settle a little
+
+    cursor.execute(select_stmt)
+    #rows = cursor.fetchall()
+    #row_count = rows[0][0]
+    #print rows
+    row = cursor.fetchone()
+    row_count = row[0]
+    # 4D v11 ODBC returns None instead of 0 for empty tables
+    if row_count is None:
+        row_count = 0
+    #
+    print "Row count is %d" % row_count
+    return row_count
+#
 
 def WriteTable(out_conn, out_cursor, out_table_name, column_specs,
                out_data, shard, num_shards):
@@ -501,38 +546,46 @@ def WriteTable(out_conn, out_cursor, out_table_name, column_specs,
 #
 
 
-def ReadTableData(in_cursor, in_table_name, column_specs):
+def ReadTableData(in_cursor, in_table_name, column_specs, expected_row_count):
     """Read all the data in a table and return a list of rows.
 
     Returns a list of rows, each row is a list of column values.
     """
 
     select_stmts = AssembleSelects(in_table_name, column_specs)
-    data_sets = RunSelects(in_cursor, select_stmts)
+    data_sets = RunSelects(in_cursor, select_stmts, remove_last_field=True, 
+                           expected_row_count=expected_row_count)
     out_data = StitchData(data_sets, column_specs)
 
     return out_data
 #
 
 
-def AssembleSelects(in_table_name, column_specs):
+def AssembleSelects(in_table_name, column_specs, max_columns=None):
     """Generate a list of select statements.
 
     The 4D ODBC driver crashes if we access too many columns.
     So we have to assemble multiple select statements and hope
     the database doesn't change underneath us.
+
+    The driver doesn't return rows if all the values as null,
+    so we add ", 1" to the list of columns returned for
+    each select so that there is at least one non-null value
+    per row.  The CAST() is required to avoid an ODBC error.
     """
+    if max_columns is None:
+        max_columns = _4D_MAX_SELECT_COLUMNS
     select_stmts = []
-    num_selects = ((len(column_specs)-1) // _4D_MAX_SELECT_COLUMNS) + 1
+    num_selects = ((len(column_specs)-1) // max_columns) + 1
     assert num_selects > 0, column_specs
     for select_idx in range(num_selects):
-        start = select_idx * _4D_MAX_SELECT_COLUMNS
-        stop = start + _4D_MAX_SELECT_COLUMNS
+        start = select_idx * max_columns
+        stop = start + max_columns
         select_column_specs = column_specs[start:stop]
 
-        select_defs = ', '.join(['"%s"' % c.in_name 
+        select_defs = ', '.join([c.select_name 
                                  for c in select_column_specs])
-        select_stmt = '''SELECT %s FROM "%s"''' % (
+        select_stmt = '''SELECT %s , CAST(1 AS int) FROM "%s"''' % (
             select_defs, in_table_name)
         select_stmts.append((select_stmt, select_column_specs))
     #
@@ -542,7 +595,7 @@ def AssembleSelects(in_table_name, column_specs):
 #
 
 
-def RunSelects(in_cursor, select_stmts, args=[], quiet=False):
+def RunSelects(in_cursor, select_stmts, args=[], quiet=False, remove_last_field=True, expected_row_count=None):
     """Run a series of select statements.
 
     The statements are assumed (hoped, really) to return different
@@ -554,8 +607,8 @@ def RunSelects(in_cursor, select_stmts, args=[], quiet=False):
     for select_stmt, select_column_specs in select_stmts:
         if not quiet:
             print "Running %s" % select_stmt
-            sys.stdout.flush()
         #
+        sys.stdout.flush()
         time.sleep(.01) # Let Embark/4D settle a little
 
         in_cursor.execute(select_stmt, *args)
@@ -573,13 +626,23 @@ def RunSelects(in_cursor, select_stmts, args=[], quiet=False):
                 #
 
                 # Character encoding conversion
-                types = [c.out_type for c in select_column_specs]
-                converted_row = map(Convert, types, row)
+                #types = [c.out_type for c in select_column_specs]
+                #converted_row = map(Convert, types, row)
+                converted_row = list(row)
+                if remove_last_field:
+                    converted_row = converted_row[:-1]
+                #
+                assert len(converted_row) == len(select_column_specs), (
+                    len(converted_row), len(select_column_specs))
                 data.append(converted_row)
             #
         #
         if not quiet:
             print "Returned %d partial rows" % len(data)
+        #
+        if expected_row_count is not None:
+            assert len(data) == expected_row_count, (
+                len(data), expected_row_count, select_stmt)
         #
         data_sets.append(data)
     #
@@ -615,7 +678,7 @@ def ReadTableDataByKey(in_cursor, in_table_name, column_specs,
     #
     print "Found %d keys" % len(key_values)
 
-    select_stmts = AssembleSelects(in_table_name, column_specs)
+    select_stmts = AssembleSelects(in_table_name, column_specs, max_columns=1000)
 
     # Add a where clause and run each select once per unique key value
     sorted_key_values = sorted(key_values)
@@ -629,10 +692,15 @@ def ReadTableDataByKey(in_cursor, in_table_name, column_specs,
         try:
             # Fetch data from source
             data_sets = RunSelects(in_cursor, new_select_stmts, 
-                                   args=[key_value], quiet=True)
+                                   args=[key_value], quiet=True,
+                                   remove_last_field=True,
+                                   expected_row_count=None)
 
             # Look for bad rows
             bad = False
+            if len(data_sets[0]) == 0:
+                bad = True
+            #
             for set_idx in range(len(data_sets)):
                 if len(data_sets[set_idx]) != len(data_sets[0]):
                     bad = True
@@ -737,13 +805,19 @@ def CopyTableWithConns(in_conn, in_cursor, out_conn, out_cursor,
     # Get columns of this table
     column_specs = GetColumnSpecs(in_cursor, in_table_name)
 
+    # Get number of rows in this table
+    expected_row_count = GetTableRowCount(in_cursor, in_table_name)
+
     # Read data
     if in_table_name in TABLE_FETCH_BY_KEY:
         print "Fetching table %s by key" % in_table_name
         out_data = ReadTableDataByKey(in_cursor, in_table_name,
                                       column_specs, shard, num_shards)
     else:
-        out_data = ReadTableData(in_cursor, in_table_name, column_specs)
+        out_data = ReadTableData(in_cursor, in_table_name, column_specs,
+                                 expected_row_count)
+        # Check that table is not truncated
+        assert len(out_data) == expected_row_count, (len(out_data), expected_row_count)
     #
 
     # Write data
@@ -842,6 +916,7 @@ def SpawnCopyTable(table_name, sqlite3_fn, shard, num_shards):
 
     print "Spawning CopyTable(%s)" % table_name
     time.sleep(.1)
+    sys.stdout.flush()
     #this_file = "DumpEmbarkDatabaseVia4DODBC.py"
     this_file = sys.argv[0]
     #args = "python.exe %s copytable %s %s" % (this_file, table_name, sqlite3_fn)
@@ -853,6 +928,7 @@ def SpawnCopyTable(table_name, sqlite3_fn, shard, num_shards):
                              stderr=subprocess.PIPE, 
                              universal_newlines=True)
     stdoutdata, stderrdata = popen.communicate()
+    sys.stdout.flush()
     if stdoutdata:
         print "== Child stdout =="
         print stdoutdata,
@@ -932,7 +1008,7 @@ def CleanupOldDumps(output_dir, output_root_name):
             # Get last modified time
             fn = os.path.join(output_dir, fn)
             mtime = os.stat(fn).st_mtime
-            print mtime
+            #print mtime
             dump_list.append((fn, mtime))
         #
     #
