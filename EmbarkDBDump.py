@@ -162,10 +162,10 @@ TABLE_BLACKLIST = (
     #'_CHOICELISTDEFS',
 
     # Crashes
-    #'_Blobs',
+##    '_Blobs',
     
     # Crashes
-    #'_Previews',
+##    '_Previews',
     
     # Crashes
     '_ThumbNails',
@@ -213,16 +213,16 @@ COLUMN_BLACKLIST = (
     
     # Truncates results
     ('Objects_1', 'Info_Page_Comm'),
-    ('Objects_1', 'User_Text_1'),
+##    ('Objects_1', 'User_Text_1'),
 
     # Truncates results
     ('Object_Notes', 'Text'),
 
     # pyodbc.Error: ('ODBC data type -25 is not supported.  Cannot read column WORDS.', 'HY000')
-    ('_Contains', 'Words'),
-    ('_Contains_Words', 'id_added_by_converter'),
-    ('Objects_1', '_Object_Keyword'),
-    ('Objects_1__Object_Keyword', 'id_added_by_converter'),
+##    ('_Contains', 'Words'),
+##    ('_Contains_Words', 'id_added_by_converter'),
+##    ('Objects_1', '_Object_Keyword'),
+##    ('Objects_1__Object_Keyword', 'id_added_by_converter'),
     )
 
 # This table has rows that, if fetched, cause 4D to truncate the
@@ -463,6 +463,11 @@ def GetColumnSpecs(in_cursor, in_table_name):
             assert False, row
         #
 
+        # Pure Hack
+        if in_name == "User_Text_1":
+            select_name = '''SUBSTRING("User_Text_1", 0, 510)'''
+        #
+        
         # Assemble SQLite CREATE TABLE spec
         out_def = '%s %s%s' % (
             out_name, out_type, 
@@ -846,6 +851,7 @@ def CopyAll(tmp_sqlite3_db_fn, final_sqlite3_db_fn):
         embark_conn = None
     #
     print "Found %d tables in source" % len(table_names)
+    table_names.sort()
         
     # Create sqlite3 destination
     CreateSQLiteFile(tmp_sqlite3_db_fn)
@@ -1139,6 +1145,8 @@ SELECT "_Object_ID", "Field_Name", "Text", "Web_Access", "Mod_Date", "Mod_Time",
     #s = '''SELECT "_Width", "_Depth", "Duration", "Info_Page_Comm" FROM "Objects_1"'''
     #s = '''SELECT "_Width", "_Depth", "Duration" FROM "Objects_1"'''
     s = '''SELECT "User_Num_2", "User_Num_3", "InActive", "User_Text_1" FROM "Objects_1"'''
+    s = '''SELECT "User_Text_1", "_AccNumSort1", "_AccNumSort2", "Artist_Dates" , CAST(1 AS int) FROM "Objects_1"'''
+    s = '''SELECT SUBSTRING("User_Text_1", 0, 510) FROM Objects_1'''
     embark_cursor.execute(s)
     print len(embark_cursor.fetchall())
     stopstop
