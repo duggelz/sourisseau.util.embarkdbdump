@@ -186,10 +186,10 @@ COLUMN_BLACKLIST = (
     ('_ChoiceListDefs', 'Values'),
 
     # Truncates results
-    ('_FM_Fields', 'Field_Help'),
+##    ('_FM_Fields', 'Field_Help'),
 
     # Truncates results
-    ('_Mod_History', 'Modifications'),
+##    ('_Mod_History', 'Modifications'),
 
     # Crash in both v7 and v8
     ('_Previews', 'Picture'),
@@ -206,17 +206,17 @@ COLUMN_BLACKLIST = (
     #('_UTILITY', 'PageNames'),
 
     # Truncates results
-    ('Artist_Maker', 'Biography'),
+##    ('Artist_Maker', 'Biography'),
 
     # Truncates results
-    ('Keywords', 'Notes'),
+##    ('Keywords', 'Notes'),
     
     # Truncates results
-    ('Objects_1', 'Info_Page_Comm'),
+##    ('Objects_1', 'Info_Page_Comm'),
 ##    ('Objects_1', 'User_Text_1'),
 
     # Truncates results
-    ('Object_Notes', 'Text'),
+##    ('Object_Notes', 'Text'),
 
     # pyodbc.Error: ('ODBC data type -25 is not supported.  Cannot read column WORDS.', 'HY000')
 ##    ('_Contains', 'Words'),
@@ -224,6 +224,18 @@ COLUMN_BLACKLIST = (
 ##    ('Objects_1', '_Object_Keyword'),
 ##    ('Objects_1__Object_Keyword', 'id_added_by_converter'),
     )
+
+# These columns have string fields that are too long(?) and
+# cause the driver to return few or no results.
+COLUMN_LIMIT_LEN = (
+    ('_FM_Fields', 'Field_Help'),
+    ('_Mod_History', 'Modifications'),
+    ('Artist_Maker', 'Biography'),
+    ('Keywords', 'Notes'),
+    ('Object_Notes', 'Text'),
+    ('Objects_1', 'User_Text_1'),
+    ('Objects_1', 'Info_Page_Comm'),
+)
 
 # This table has rows that, if fetched, cause 4D to truncate the
 # results and/or crash.  We use an alternate method to fetch what we
@@ -388,9 +400,9 @@ def GetColumnSpecs(in_cursor, in_table_name):
     for idx, row in enumerate(in_cursor):
         # Validate column names
         print row
-        for idx, (desc, val) in enumerate(zip(row.cursor_description, row)):
-            print "[%d] %s='%s'" % (idx, desc[0], val)
-        #
+        #for idx, (desc, val) in enumerate(zip(row.cursor_description, row)):
+        #    print "[%d] %s='%s'" % (idx, desc[0], val)
+        ##
         in_name = row.column_name
         out_name = in_name
         match = re.match('^[a-zA-Z_0-9 ]+$', in_name)
@@ -441,31 +453,23 @@ def GetColumnSpecs(in_cursor, in_table_name):
             out_type = 'INTEGER'
         elif row.type_name in ('UNKNOWN', 'BLOB'):
             out_type = 'BLOB'
-#        elif row.type_name == 'DATE':
-#            assert row.column_size == 10
-#            assert row.buffer_length == 6
-#            assert row.decimal_digits is None
-#            assert row.num_prec_radix is None
-#            out_type = 'DATE'
-#        elif row.type_name == 'TIME':
-#            assert row.column_size == 8
-#            assert row.buffer_length == 6
-#            assert row.decimal_digits is None
-#            assert row.num_prec_radix is None
-#            out_type = 'TIME'
-        elif row.type_name == 'TIMESTAMP':
+        elif row.type_name == 'TIMESTAMP' and row.data_type == 91:
+            assert row.sql_datetime_sub == 1 # SQL_CODE_DATE
+            out_type = 'DATE'
+        elif row.type_name == 'INTERVAL' and row.data_type == 110:
+            assert row.sql_datetime_sub == 2 # SQL_CODE_TIME
+            out_type = 'TIME'
+        elif row.type_name == 'TIMESTAMP' and row.data_type == 93:
+            assert row.sql_datetime_sub == 3 # SQL_CODE_TIMESTAMP
             out_type = 'TIMESTAMP'
-            # TODO: Check this
-        elif row.type_name == 'INTERVAL':
-            out_type = 'INTERVAL'
-            # TODO: Check this
         else:
             assert False, row
         #
 
         # Pure Hack
-        if in_name == "User_Text_1":
-            select_name = '''SUBSTRING("User_Text_1", 0, 510)'''
+        if (in_table_name, in_name) in COLUMN_LIMIT_LEN:
+            column_max_len = 510
+            select_name = '''SUBSTRING("%s", 0, %d)''' % (in_name, column_max_len)
         #
         
         # Assemble SQLite CREATE TABLE spec
