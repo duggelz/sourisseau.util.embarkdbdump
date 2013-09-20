@@ -8,7 +8,7 @@
 
 I. Installing 4D ODBC Drivers to connect to the Embark database
 
-1. Find the folder "4D v11 SQL Release 9 Custom"
+1. Find the folder "4D v12.4 Custom"
 
    Run the file "4D ODBC Driver.exe"
 

@@ -259,7 +259,8 @@ _4D_MAX_SELECT_COLUMNS = 4
 _4D_ENCODING = 'utf-8'
 #_4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK	SLICK;'
 #_4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK    localhost;'
-_4D_DSN = 'DRIVER={4D v11 ODBC Driver};SERVER=localhost;PORT=19812;UID=Administrator'
+#_4D_DSN = 'DRIVER={4D v11 ODBC Driver};SERVER=localhost;PORT=19812;UID=Administrator'
+_4D_DSN = 'DRIVER={4D v12 ODBC Driver};SERVER=localhost;PORT=19812;UID=Administrator'
 
 # Return codes aren't working.  I don't know why.  So use magic strings
 COPY_TABLE_SUCCESS_MAGIC = 'CopyTable Success QQZZ1'
