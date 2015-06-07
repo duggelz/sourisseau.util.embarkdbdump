@@ -9,6 +9,44 @@
 #
 # Empirical Stuff:
 #   Result of running embark_cursor.getTypeInfo():
+#   v9.5.1
+#     000 (u'BOOLEAN', -7, 5, None, None, None, 2, 0, 2, 1, 0, 0, u'BOOLEAN', 0, 0, -7, 0, 10, 10)
+#     001 (u'TEXT', 1, 256, u"'", u"'", None, 2, 1, 1, 0, 0, 0, u'TEXT', 0, 0, 1, 0, 10, 10)
+#     002 (u'TEXT', -8, 256, u"'", u"'", None, 2, 1, 1, 0, 0, 0, u'TEXT', 0, 0, -8, 0, 10, 10)
+#     003 (u'BYTE', -6, 4, None, None, None, 2, 0, 2, 0, 0, 1, u'BYTE', 0, 0, -6, 0, 10, 10)
+#     004 (u'INT16', 5, 6, None, None, None, 2, 0, 2, 0, 0, 1, u'INT16', 0, 0, 5, 0, 10, 10)
+#     005 (u'INT32', 4, 11, None, None, None, 2, 0, 2, 0, 0, 1, u'INT32', 0, 0, 4, 0, 10, 10)
+#     006 (u'UUID', -11, 32, None, None, None, 2, 0, 2, 0, 0, 1, u'UUID', 0, 0, -11, 0, 10, 10)
+#     007 (u'INT64', -5, 20, None, None, None, 2, 0, 2, 0, 0, 1, u'INT64', 0, 0, -5, 0, 10, 10)
+#     008 (u'REAL', 7, 7, None, None, None, 2, 0, 2, 0, 0, 0, u'REAL', 0, 0, 7, 0, 10, 10)
+#     009 (u'DOUBLE PRECISION', 8, 15, None, None, None, 2, 0, 2, 0, 0, 0, u'DOUBLE PRECISION', 0, 0, 8, 0, 10, 10)
+#     010 (u'DOUBLE PRECISION', 2, 10, None, None, None, 2, 0, 2, 0, 0, 0, u'DOUBLE PRECISION', 0, 0, 2, 0, 10, 10)
+#     011 (u'BINARY', -2, 0, None, None, None, 2, 0, 2, 1, 0, 0, u'BINARY', 0, 0, -2, 0, 10, 10)
+#     012 (u'TIMESTAMP', 91, 10, None, None, None, 2, 0, 2, 1, 0, 0, u'TIMESTAMP', 0, 0, 9, 1, 10, 10)
+#     013 (u'DURATION', 92, 8, None, None, None, 2, 0, 2, 1, 0, 0, u'DURATION', 0, 0, 92, 0, 10, 10)
+#     014 (u'TIMESTAMP', 93, 19, None, None, None, 2, 0, 2, 1, 0, 0, u'TIMESTAMP', 0, 0, 9, 3, 10, 10)
+#     015 (u'DURATION', 110, 10, None, None, None, 2, 0, 2, 1, 0, 0, u'DURATION', 0, 0, 9, 2, 10, 10)
+#    .description
+#     000 ('type_name', <type 'unicode'>, None, 256, 256, 0, True)
+#     001 ('data_type', <type 'int'>, None, 2, 2, 0, True)
+#     002 ('column_size', <type 'int'>, None, 4, 4, 0, True)
+#     003 ('literal_prefix', <type 'unicode'>, None, 256, 256, 0, True)
+#     004 ('literal_suffix', <type 'unicode'>, None, 256, 256, 0, True)
+#     005 ('create_params', <type 'unicode'>, None, 256, 256, 0, True)
+#     006 ('nullable', <type 'int'>, None, 2, 2, 0, True)
+#     007 ('case_sensitive', <type 'int'>, None, 2, 2, 0, True)
+#     008 ('searchable', <type 'int'>, None, 2, 2, 0, True)
+#     009 ('unsigned_attribute', <type 'int'>, None, 2, 2, 0, True)
+#     010 ('fixed_prec_scale', <type 'int'>, None, 2, 2, 0, True)
+#     011 ('auto_unique_value', <type 'int'>, None, 2, 2, 0, True)
+#     012 ('local_type_name', <type 'unicode'>, None, 256, 256, 0, True)
+#     013 ('minimum_scale', <type 'int'>, None, 2, 2, 0, True)
+#     014 ('maximum_scale', <type 'int'>, None, 2, 2, 0, True)
+#     015 ('sql_data_type', <type 'int'>, None, 2, 2, 0, True)
+#     016 ('sql_datetime_sub', <type 'int'>, None, 2, 2, 0, True)
+#     017 ('num_prec_radix', <type 'int'>, None, 4, 4, 0, True)
+#     018 ('interval_precision', <type 'int'>, None, 2, 2, 0, True)
+#
 #   v8
 #     (u'BOOLEAN', -7, 5, None, None, None, 2, 0, 2, 1, 0, 0, u'BOOLEAN', 0, 0, -7, 0, 10, 10)
 #     (u'TEXT', 1, 256, u"'", u"'", None, 2, 1, 1, 0, 0, 0, u'TEXT', 0, 0, 1, 0, 10, 10)
@@ -81,10 +119,10 @@
 #
 #   Result of running embark_cursor.tables():
 #   v8
-#     ('table_cat', <type 'unicode'>, None, 256, 256, 0, True), 
+#     ('table_cat', <type 'unicode'>, None, 256, 256, 0, True),
 #     ('table_schem', <type 'unicode'>, None, 256, 256, 0, True),
 #     ('table_name', <type 'unicode'>, None, 256, 256, 0, True),
-#     ('table_type', <type 'unicode'>, None, 256, 256, 0, True), 
+#     ('table_type', <type 'unicode'>, None, 256, 256, 0, True),
 #     ('remarks', <type 'unicode'>, None, 256, 256, 0, True)]
 #
 #     E.g. (None, None, u'_Debug', u'TABLE', None)
@@ -99,7 +137,7 @@
 #     2. table_schem: The schema name.
 #     3. table_name: The table name.
 #     4. table_type: One of TABLE, VIEW, SYSTEM TABLE, GLOBAL TEMPORARY, LOCAL TEMPORARY, ALIAS, SYNONYM, or a data source-specific type name.
-#     5. remarks: A description of the table. 
+#     5. remarks: A description of the table.
 #
 #     E.g. ('C:\\USERS\\DUGGELZ\\DESKTOP\\4D ODBC DRIVER FOR WINDOWS 7 64BIT', None, '_AAT_OTHERTERMS', 'TABLE', None)
 #
@@ -163,10 +201,10 @@ TABLE_BLACKLIST = (
 
     # Crashes
 ##    '_Blobs',
-    
+
     # Crashes
 ##    '_Previews',
-    
+
     # Crashes
     '_ThumbNails',
 
@@ -180,7 +218,12 @@ COLUMN_BLACKLIST = (
     ('_Blobs', 'theBlob'),
 
     # Has two columns with the same name
-    #('_CHOICELISTDEFS', '_unused'),
+    ('_ChoiceListDefs', '_unused'),
+
+    # Truncated
+    ('_ChoiceListDefs', '_Parent_Value'),
+    ('_ChoiceListDefs', 'ValuesData'),
+    ('_ChoiceListDefs', 'CreateStamp'),
 
     # Illegal column name
     ('_ChoiceListDefs', 'Values'),
@@ -191,6 +234,9 @@ COLUMN_BLACKLIST = (
     # Truncates results
 ##    ('_Mod_History', 'Modifications'),
 
+    # v9.5.1 sqlite3.InterfaceError: Error binding parameter 5 - probably unsupported type
+    ('Portfolios', 'PortPict'),
+
     # Crash in both v7 and v8
     ('_Previews', 'Picture'),
 
@@ -200,17 +246,20 @@ COLUMN_BLACKLIST = (
     # 0 results
     ('_User_Groups', 'AccessFldIDs'),
 
-    # Error ('S1000', '[S1000] [Simba][Simba ODBC Driver][Codebase File Library] (-9703) (SQLFetch)')
-    #('_UTILITY', 'ContainsField'),
     # Crash
-    #('_UTILITY', 'PageNames'),
+    ('_UTILITY', 'ContainsField'),
+    # Crash
+    ('_UTILITY', 'PageNames'),
+
+    # v9.5.1 sqlite3.InterfaceError: Error binding parameter 81 - probably unsupported type.
+    ('_UTILITY', 'Delay')
 
     # Truncates results
 ##    ('Artist_Maker', 'Biography'),
 
     # Truncates results
 ##    ('Keywords', 'Notes'),
-    
+
     # Truncates results
 ##    ('Objects_1', 'Info_Page_Comm'),
 ##    ('Objects_1', 'User_Text_1'),
@@ -260,7 +309,8 @@ _4D_ENCODING = 'utf-8'
 #_4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK	SLICK;'
 #_4D_DSN = 'DRIVER={4D 2004 Server 32bit Driver};SERVER=TCP/IP:EmbARK    localhost;'
 #_4D_DSN = 'DRIVER={4D v11 ODBC Driver};SERVER=localhost;PORT=19812;UID=Administrator'
-_4D_DSN = 'DRIVER={4D v12 ODBC Driver};SERVER=localhost;PORT=19812;UID=Administrator'
+#_4D_DSN = 'DRIVER={4D v12 ODBC Driver};SERVER=localhost;PORT=19812;UID=Administrator'
+_4D_DSN = 'DSN=4D;SERVER=localhost;PORT=19812;UID=Administrator'
 
 # Return codes aren't working.  I don't know why.  So use magic strings
 COPY_TABLE_SUCCESS_MAGIC = 'CopyTable Success QQZZ1'
@@ -412,7 +462,7 @@ def GetColumnSpecs(in_cursor, in_table_name):
         # Some columns cause a crash when they are SELECTed.  Skip them
         blacklisted_lowered = [(t.lower(), c.lower()) for t,c in COLUMN_BLACKLIST]
         if (in_table_name.lower(), in_name.lower()) in blacklisted_lowered:
-            print "Skipping blacklisted column %s%s" % (in_table_name, in_name)
+            print "Skipping blacklisted column %s %s" % (in_table_name, in_name)
             continue
         #
 
@@ -429,42 +479,39 @@ def GetColumnSpecs(in_cursor, in_table_name):
         # Handle each recognized type
         select_name = '"%s"' % in_name
         if row.type_name in ('STRING', 'TEXT', 'CLOB'):
-            assert row.column_size == row.buffer_length, row
+            #assert row.column_size == row.buffer_length, { t[0]: value for (t, value) in zip(row.cursor_description, row) }
             out_type = 'TEXT'
         elif row.type_name in ('INT16', 'INT32'):
             # Avoid "ODBC data type -25 is not supported.  Cannot read column"
             # TODO Cast to some other type
-            assert row.data_type != -25, row
+            #assert row.data_type != -25, row
             out_type = 'INTEGER'
         elif row.type_name in ('INT64'):
             # Apparently the driver can't handle 64 bit ints, so we truncate
             # them all to 32 bits.  The error is
             # Avoid "ODBC data type -25 is not supported.  Cannot read column"
-            assert row.data_type == -25, row
-            select_name = 'CAST("%s" AS INT) AS "%s"' % (in_name, in_name)
+            #assert row.data_type == -25, row
+            #select_name = 'CAST("%s" AS INT) AS "%s"' % (in_name, in_name)
             out_type = 'INTEGER'
         elif row.type_name in ('REAL',):
             assert 1 < row.buffer_length <= 8, row
-            assert row.num_prec_radix == 10, row
+            #assert row.num_prec_radix == 10, { t[0]: value for (t, value) in zip(row.cursor_description, row) }
             assert row.decimal_digits in (0, None), row
             out_type = 'REAL'
         elif row.type_name == 'BOOLEAN':
-            assert row.buffer_length == 1, row
-            assert row.num_prec_radix == 2, row
+            #assert row.buffer_length == 1, row
+            #assert row.num_prec_radix == 2, row
             out_type = 'INTEGER'
         elif row.type_name in ('UNKNOWN', 'BLOB'):
             out_type = 'BLOB'
-        elif row.type_name == 'TIMESTAMP' and row.data_type == 91:
-            assert row.sql_datetime_sub == 1 # SQL_CODE_DATE
+        elif row.type_name == 'TIMESTAMP':
+            assert row.sql_datetime_sub in (1,3), { t[0]: value for (t, value) in zip(row.cursor_description, row) } # SQL_CODE_DATE
             out_type = 'DATE'
-        elif row.type_name == 'INTERVAL' and row.data_type == 110:
+        elif row.type_name == 'INTERVAL':
             assert row.sql_datetime_sub == 2 # SQL_CODE_TIME
             out_type = 'TIME'
-        elif row.type_name == 'TIMESTAMP' and row.data_type == 93:
-            assert row.sql_datetime_sub == 3 # SQL_CODE_TIMESTAMP
-            out_type = 'TIMESTAMP'
         else:
-            assert False, row
+            assert False, { t[0]: value for (t, value) in zip(row.cursor_description, row) }
         #
 
         # Pure Hack
@@ -1136,6 +1183,7 @@ def main():
     #
 #
 
+# Random test code
 if 0:
     embark_conn, embark_cursor = OpenEmbarkConn()
     s = '''
@@ -1146,21 +1194,23 @@ SELECT "_Object_ID", "Field_Name", "Text", "Web_Access", "Mod_Date", "Mod_Time",
     s = '''SELECT "_unused5", "_unused6" FROM "_User_Groups"'''
     s = '''SELECT "_Group_ID", "Name", "Menus_Pg4" FROM "_User_Groups"'''
     s = '''SELECT "AccessFldIDs" FROM "_User_Groups"'''
-    s = '''SELECT "_Object_Keyword" FROM "Objects_1"'''    
+    s = '''SELECT "_Object_Keyword" FROM "Objects_1"'''
     #s = '''SELECT "_Width", "_Depth", "Duration", "Info_Page_Comm" FROM "Objects_1"'''
     #s = '''SELECT "_Width", "_Depth", "Duration" FROM "Objects_1"'''
     s = '''SELECT "User_Num_2", "User_Num_3", "InActive", "User_Text_1" FROM "Objects_1"'''
     s = '''SELECT "User_Text_1", "_AccNumSort1", "_AccNumSort2", "Artist_Dates" , CAST(1 AS int) FROM "Objects_1"'''
     s = '''SELECT SUBSTRING("User_Text_1", 0, 510) FROM Objects_1'''
     embark_cursor.execute(s)
-    print len(embark_cursor.fetchall())
-    stopstop
-    #for row_idx, row in enumerate(embark_cursor.getTypeInfo()):
-    #embark_cursor.getTypeInfo()
-    #for row_idx, row in enumerate(embark_cursor.description):
+    #print len(embark_cursor.fetchall())
+    #stopstop
+    for row_idx, row in enumerate(embark_cursor.getTypeInfo()):
+        print "%03d %s" % (row_idx, row)
+    embark_cursor.getTypeInfo()
+    for row_idx, row in enumerate(embark_cursor.description):
+        print "%03d %s" % (row_idx, row)
     #for row_idx, row in enumerate(embark_cursor.tables()):
     #for row_idx, row in enumerate(embark_cursor.columns()):
-    for row_idx, row in enumerate(embark_cursor.execute(s)):
+    #for row_idx, row in enumerate(embark_cursor.execute(s)):
         print "%03d %s" % (row_idx, row)
         #print row_idx
     #print "Found %d rows" % (embark_cursor.rowcount)
