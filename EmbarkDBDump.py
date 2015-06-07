@@ -3,9 +3,25 @@
 # Douglas Greiman
 # January 12, 2011
 #
-# Export all the data from an Embark server using the 4D 2004.7
-# ODBC driver.
+# Export all the data from an Embark server using the 4D ODBC driver.
 #
+# General notes: The 4D ODBC driver is complete garbage.  So this
+# entire file is a collection of nasty, ad-hoc, empirically determined
+# hacks.
+#
+# 4D ODBC Driver/PyODBC Programming Notes
+#
+#   A) In SELECT statements, column names should be double quoted, i.e.
+#      SELECT "_Object_1_ID" FROM OBJECTS_1
+#
+#   B) In SELECT statements, LIMIT X is not allowed
+#
+#   C) The maximum number of columns that can be in a single SELECT is,
+#      by empirical testing, 79 or less.  More than that crashes the
+#      process.  Probably should use somewhat less than 79 to give
+#      a buffer against other unknown limits.
+#
+# As of 4D v11, we hope that all text fields are UTF-8
 #
 # Empirical Stuff:
 #   Result of running embark_cursor.getTypeInfo():
@@ -158,8 +174,7 @@
 #     E.g. ('C:\\USERS\\DUGGELZ\\DESKTOP\\4D ODBC DRIVER FOR WINDOWS 7 64BIT', None, '_AAT_OTHERTERMS', '_New_DK_ID', 12, 'STRING', 4, 4, None, None, 1, None)
 #
 # Various broken things:
-#   x _Mod_History should have 1756 records but we retrieve 0
-#   x _User_Groups should have 2 records but we retrieve 0
+#   * Too many to list
 #
 # TODO:
 #   * Retry CopyTable if child process fails for any reason
@@ -186,7 +201,6 @@ import traceback
 
 import pyodbc
 import sqlite3
-
 
 # Work around IDLE bug
 if "__file__" not in globals():
@@ -329,9 +343,9 @@ def DisableErrorPopup():
     pop up a window to the user (who may not exist or be logged in),
     and halt all further processing, along with hogging file and
     database handles.  This disables the popup.
-    
+
     From http://blogs.msdn.com/b/oldnewthing/archive/2004/07/27/198410.aspx
-    
+
     DWORD dwMode = SetErrorMode(SEM_NOGPFAULTERRORBOX);
     SetErrorMode(dwMode | SEM_NOGPFAULTERRORBOX);
     """
@@ -415,7 +429,7 @@ def FinalizeSQLiteFile(tmp_sqlite3_db_fn, final_sqlite3_db_fn):
 
 def OpenSQLiteConn(sqlite3_fn):
     """Open connection to sqlite database
-    
+
     sqlite3_fn: Filename of database
 
     Returns (connection, cursor)
@@ -1130,7 +1144,7 @@ def CleanupOldDumps(output_dir, output_root_name):
         os.rename(fn, old_fn)
         pass
     #
-#           
+#
 
 
 def usage():
